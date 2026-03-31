@@ -1,0 +1,23 @@
+package com.example.localservice.di
+
+import com.example.localservice.data.repository.AuthRepositoryImpl
+import com.example.localservice.domain.repository.AuthRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+// Hilt necesita saber que cuando alguien pide AuthRepository
+// tiene que darle AuthRepositoryImpl. Ese "binding" va acá.
+// A medida que agregues más repositories, los sumás en este archivo.
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        impl: AuthRepositoryImpl
+    ): AuthRepository
+}
