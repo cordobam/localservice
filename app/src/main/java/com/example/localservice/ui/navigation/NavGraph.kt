@@ -51,6 +51,7 @@ fun NavGraph(
 
         composable(Screen.Register.route) {
             RegisterScreen(
+                viewModel = authViewModel,
                 onNavigateToLogin = { navController.popBackStack() },
                 onNavigateToRolePicker = { navController.navigate(Screen.RolePicker.route) }
             )
@@ -58,6 +59,7 @@ fun NavGraph(
 
         composable(Screen.RolePicker.route) {
             RolePickerScreen(
+                viewModel = authViewModel,
                 onRoleSelected = { role ->
                     val dest = if (role == UserRole.CLIENT) Screen.Search.route
                                else Screen.Dashboard.route

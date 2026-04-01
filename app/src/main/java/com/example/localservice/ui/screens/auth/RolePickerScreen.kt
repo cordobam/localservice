@@ -8,13 +8,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.localservice.domain.model.UserRole
+import com.example.localservice.ui.viewmodel.AuthViewModel
 
 // Pantalla clave: define qué modo ve el usuario al entrar.
 // Se muestra una sola vez al registrarse.
 @Composable
 fun RolePickerScreen(
-    onRoleSelected: (UserRole) -> Unit
+    onRoleSelected: (UserRole) -> Unit,
+    viewModel: AuthViewModel
 ) {
     var selectedRole by remember { mutableStateOf<UserRole?>(null) }
 
@@ -64,13 +67,32 @@ fun RolePickerScreen(
         Spacer(modifier = Modifier.height(40.dp))
 
         Button(
-            onClick = { selectedRole?.let { onRoleSelected(it) } },
+            onClick = {
+                selectedRole?.let { role ->
+                    android.util.Log.d("ServiLocal", "BOTON PRESIONADO - role: $role")
+                    android.util.Log.d("ServiLocal", "Datos: ${viewModel.pendingName} / ${viewModel.pendingEmail}")
+                    viewModel.register(
+                        name     = viewModel.pendingName,
+                        email    = viewModel.pendingEmail,
+                        password = viewModel.pendingPassword,
+                        phone    = viewModel.pendingPhone,
+                        role     = role
+                    )
+                }
+                      },
             enabled = selectedRole != null,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
             Text("Continuar")
+        }
+
+        val uiState by viewModel.uiState.collectAsState()
+        LaunchedEffect(uiState.isLoggedIn) {
+            if (uiState.isLoggedIn) {
+                selectedRole?.let { onRoleSelected(it) }
+            }
         }
     }
 }
