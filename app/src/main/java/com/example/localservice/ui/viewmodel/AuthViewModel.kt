@@ -34,6 +34,11 @@ class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
+    var pendingName = ""
+    var pendingEmail = ""
+    var pendingPassword = ""
+    var pendingPhone = ""
+
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
@@ -71,6 +76,7 @@ class AuthViewModel @Inject constructor(
 
             when (val result = authRepository.login(email, password)) {
                 is Result.Success -> {
+                    android.util.Log.d("ServiLocal", "REGISTRO OK: ${result.data.email}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -80,6 +86,7 @@ class AuthViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
+                    android.util.Log.e("ServiLocal", "REGISTRO ERROR: ${result.message}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -99,24 +106,30 @@ class AuthViewModel @Inject constructor(
         phone: String,
         role: UserRole
     ) {
+        android.util.Log.d("ServiLocal", "REGISTER LLAMADO - name: $name email: $email") // ← agregá
+
         if (name.isBlank()) {
+            android.util.Log.e("ServiLocal", "FALLO - nombre en blanco")
             _uiState.update { it.copy(error = "Ingresá tu nombre") }
             return
         }
         if (!email.isValidEmail()) {
+            android.util.Log.e("ServiLocal", "FALLO - email inválido: $email")
             _uiState.update { it.copy(error = "El correo no es válido") }
             return
         }
         if (!password.isValidPassword()) {
+            android.util.Log.e("ServiLocal", "FALLO - password inválida")
             _uiState.update { it.copy(error = "La contraseña debe tener al menos 6 caracteres") }
             return
         }
-
+        android.util.Log.d("ServiLocal", "PASÓ VALIDACIONES - lanzando coroutine") // ← agregá
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             when (val result = authRepository.register(name, email, password, phone, role)) {
                 is Result.Success -> {
+                    android.util.Log.d("ServiLocal", "REGISTRO OK: ${result.data.email}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -126,6 +139,7 @@ class AuthViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
+                    android.util.Log.e("ServiLocal", "REGISTRO ERROR: ${result.message}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -148,5 +162,17 @@ class AuthViewModel @Inject constructor(
     // Limpia el error después de mostrarlo en la UI
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    fun savePendingRegistration(
+        name: String,
+        email: String,
+        password: String,
+        phone: String
+    ) {
+        pendingName = name
+        pendingEmail = email
+        pendingPassword = password
+        pendingPhone = phone
     }
 }

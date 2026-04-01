@@ -104,7 +104,10 @@ fun RegisterScreen(
         // El botón navega a RolePicker pasando los datos —
         // el rol se elige en la pantalla siguiente
         Button(
-            onClick = { onNavigateToRolePicker() },
+            onClick = {
+                        viewModel.savePendingRegistration(name, email, password, phone)
+                        onNavigateToRolePicker()
+                      },
             enabled = !uiState.isLoading && name.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()

@@ -37,9 +37,11 @@ class AuthFirebaseSource @Inject constructor(
         role: UserRole
     ): Result<User> {
         return try {
+            android.util.Log.d("ServiLocal", "PASO 1 - Creando usuario en Auth")
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val uid = result.user?.uid ?: return Result.Error("UID nulo")
 
+            android.util.Log.d("ServiLocal", "PASO 2 - Usuario creado, uid: $uid")
             val user = User(
                 uid = uid,
                 name = name,
@@ -49,13 +51,15 @@ class AuthFirebaseSource @Inject constructor(
                 createdAt = System.currentTimeMillis()
             )
 
-            // Guarda el perfil en Firestore
+            android.util.Log.d("ServiLocal", "PASO 3 - Escribiendo en Firestore")
             firestore.collection("users").document(uid)
                 .set(user.toMap())
                 .await()
 
+            android.util.Log.d("ServiLocal", "PASO 4 - Todo OK")
             Result.Success(user)
         } catch (e: Exception) {
+            android.util.Log.e("ServiLocal", "EXCEPCION: ${e.message}")
             Result.Error(e.message ?: "Error al registrarse", e)
         }
     }
