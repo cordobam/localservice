@@ -83,6 +83,7 @@ dependencies {
 
     // --- Coil (imágenes) ---
     implementation(libs.coil.compose)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // FASE 2+ — descomentá cuando lo necesites:
     // implementation(libs.retrofit)

@@ -1,7 +1,9 @@
 package com.example.localservice.di
 
 import com.example.localservice.data.repository.AuthRepositoryImpl
+import com.example.localservice.data.repository.ProviderRepositoryImpl
 import com.example.localservice.domain.repository.AuthRepository
+import com.example.localservice.domain.repository.ProviderRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -20,4 +22,8 @@ abstract class RepositoryModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl
     ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindProviderRepository(impl: ProviderRepositoryImpl): ProviderRepository
 }
