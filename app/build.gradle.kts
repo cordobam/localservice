@@ -91,4 +91,6 @@ dependencies {
     // implementation(libs.okhttp.logging.interceptor)
     // implementation(libs.maps.compose)
     // implementation(libs.play.services.location)
+
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }

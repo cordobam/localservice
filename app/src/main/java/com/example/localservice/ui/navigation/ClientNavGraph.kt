@@ -1,9 +1,13 @@
 package com.example.localservice.ui.navigation
 
+import android.R.attr.type
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.localservice.ui.screens.client.MyBookingsScreen
+import com.example.localservice.ui.screens.client.ProviderDetailScreen
 import com.example.localservice.ui.screens.client.SearchScreen
 import com.example.localservice.ui.viewmodel.AuthViewModel
 
@@ -38,4 +42,17 @@ fun NavGraphBuilder.clientNavGraph(
 
     // Próximas pantallas del cliente se agregan acá:
     // ProviderDetailScreen, BookingScreen, TrackingScreen, etc.
+    composable(
+        route = Screen.ProviderDetail.route,
+        arguments = listOf(navArgument("providerId") { type = NavType.StringType })
+    ) {
+        ProviderDetailScreen(
+            onBack = { navController.popBackStack() },
+            onBookingCreated = { slug ->
+                // Por ahora volvemos a la búsqueda — en Fase 4 navegaremos al Tracking
+                navController.popBackStack()
+            },
+            authViewModel = authViewModel
+        )
+    }
 }
