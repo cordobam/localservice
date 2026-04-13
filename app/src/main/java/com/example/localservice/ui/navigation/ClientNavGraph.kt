@@ -1,6 +1,5 @@
 package com.example.localservice.ui.navigation
 
-import android.R.attr.type
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -11,8 +10,6 @@ import com.example.localservice.ui.screens.client.ProviderDetailScreen
 import com.example.localservice.ui.screens.client.SearchScreen
 import com.example.localservice.ui.viewmodel.AuthViewModel
 
-// Extensión del NavGraphBuilder para mantener el NavGraph principal limpio.
-// Todas las rutas del cliente van acá.
 fun NavGraphBuilder.clientNavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel
@@ -31,26 +28,25 @@ fun NavGraphBuilder.clientNavGraph(
         )
     }
 
-    composable(Screen.MyBookings.route) {
-        MyBookingsScreen(
-            onNavigateToTracking = { projectId ->
-                navController.navigate(Screen.Tracking.createRoute(projectId))
-            },
-            onBack = { navController.popBackStack() }
-        )
-    }
-
-    // Próximas pantallas del cliente se agregan acá:
-    // ProviderDetailScreen, BookingScreen, TrackingScreen, etc.
     composable(
         route = Screen.ProviderDetail.route,
         arguments = listOf(navArgument("providerId") { type = NavType.StringType })
     ) {
         ProviderDetailScreen(
             onBack = { navController.popBackStack() },
-            onBookingCreated = { slug ->
-                // Por ahora volvemos a la búsqueda — en Fase 4 navegaremos al Tracking
-                navController.popBackStack()
+            onBookingCreated = { _ ->
+                // Navega a Mis Pedidos después de crear la solicitud
+                navController.navigate(Screen.MyBookings.route)
+            },
+            authViewModel = authViewModel
+        )
+    }
+
+    composable(Screen.MyBookings.route) {
+        MyBookingsScreen(
+            onBack = { navController.popBackStack() },
+            onNavigateToTracking = { slug ->
+                navController.navigate(Screen.Tracking.createRoute(slug))
             },
             authViewModel = authViewModel
         )

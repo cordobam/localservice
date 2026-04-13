@@ -1,13 +1,11 @@
-package com.servilocal.app.ui.navigation
+package com.example.localservice.ui.navigation
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.example.localservice.ui.navigation.Screen
 import com.example.localservice.ui.screens.provider.DashboardScreen
 import com.example.localservice.ui.viewmodel.AuthViewModel
 
-// Todas las rutas del prestador van acá.
 fun NavGraphBuilder.providerNavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel
@@ -17,8 +15,8 @@ fun NavGraphBuilder.providerNavGraph(
             onNavigateToRequests = {
                 navController.navigate(Screen.IncomingRequests.route)
             },
-            onNavigateToProject = { projectId ->
-                navController.navigate(Screen.ProjectDetail.createRoute(projectId))
+            onNavigateToProject = { bookingId ->
+                navController.navigate(Screen.ProjectDetail.createRoute(bookingId))
             },
             onNavigateToProfile = {
                 navController.navigate(Screen.MyProfile.route)
@@ -28,10 +26,11 @@ fun NavGraphBuilder.providerNavGraph(
                 navController.navigate(Screen.Login.route) {
                     popUpTo(0) { inclusive = true }
                 }
-            }
+            },
+            authViewModel = authViewModel
         )
     }
 
-    // Próximas pantallas del prestador se agregan acá:
-    // IncomingRequestsScreen, ProjectDetailScreen, StageEditorScreen, etc.
+    // Próximas pantallas del prestador se agregan acá en Fase 4:
+    // StageEditorScreen, BudgetBuilderScreen, MyProfileScreen, etc.
 }

@@ -1,5 +1,6 @@
 package com.example.localservice.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.localservice.domain.model.User
@@ -50,11 +51,16 @@ class AuthViewModel @Inject constructor(
     private fun checkCurrentSession() {
         viewModelScope.launch {
             authRepository.getCurrentUser().collect { user ->
-                _uiState.update {
-                    it.copy(
-                        currentUser = user,
-                        isLoggedIn = user != null
-                    )
+                _uiState.update { current ->
+                    when {
+                        // 🔥 Si Firebase manda null, IGNORAR SI YA ESTAMOS LOGUEADOS
+                        user == null && current.isLoggedIn -> current
+
+                        else -> current.copy(
+                            currentUser = user,
+                            isLoggedIn = user != null
+                        )
+                    }
                 }
             }
         }

@@ -20,7 +20,7 @@ import com.example.localservice.ui.viewmodel.AuthViewModel
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToRolePicker: () -> Unit,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel // ← Quita el "= hiltViewModel()"
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
