@@ -1,5 +1,6 @@
 package com.example.localservice.ui.screens.auth
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
 
     // Cuando el login es exitoso, notificamos a NavGraph
     LaunchedEffect(uiState.isLoggedIn) {

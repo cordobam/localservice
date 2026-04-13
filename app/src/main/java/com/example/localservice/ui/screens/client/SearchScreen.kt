@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,12 +30,12 @@ import com.example.localservice.ui.viewmodel.SearchViewModel
 fun SearchScreen(
     onNavigateToProviderDetail: (String) -> Unit,
     onLogout: () -> Unit,
+    onNavigateToMyBookings: (() -> Unit)? = null,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Launcher para pedir permiso de ubicación
     val locationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -46,13 +47,10 @@ fun SearchScreen(
                         viewModel.onUserLocationUpdated(it.latitude, it.longitude)
                     }
                 }
-            } catch (e: SecurityException) {
-                // Permiso revocado entre el request y el uso — ignoramos
-            }
+            } catch (e: SecurityException) { }
         }
     }
 
-    // Pedimos ubicación al entrar a la pantalla
     LaunchedEffect(Unit) {
         locationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
@@ -62,21 +60,22 @@ fun SearchScreen(
             TopAppBar(
                 title = { Text("ServiLocal") },
                 actions = {
-                    TextButton(onClick = onLogout) {
-                        Text("Salir")
+                    // Botón mis pedidos
+                    if (onNavigateToMyBookings != null) {
+                        IconButton(onClick = onNavigateToMyBookings) {
+                            Icon(Icons.Outlined.List, contentDescription = "Mis pedidos")
+                        }
                     }
+                    TextButton(onClick = onLogout) { Text("Salir") }
                 }
             )
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-
-            // --- Filtro de zona ---
             var zoneText by remember { mutableStateOf("") }
             OutlinedTextField(
                 value = zoneText,
@@ -102,21 +101,17 @@ fun SearchScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // --- Chips de categoría (scroll horizontal) ---
             Row(
                 modifier = Modifier
                     .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Chip "Todos"
                 FilterChip(
                     selected = uiState.selectedCategory == null,
                     onClick = { viewModel.onCategorySelected(null) },
                     label = { Text("Todos") }
                 )
-
-                // Un chip por cada categoría
                 ServiceCategory.mainCategories().forEach { category ->
                     FilterChip(
                         selected = uiState.selectedCategory == category,
@@ -126,14 +121,9 @@ fun SearchScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // --- Indicador de ubicación activa ---
             if (uiState.userLat != null) {
                 Row(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth(),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -149,80 +139,46 @@ fun SearchScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // --- Contenido principal ---
             when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                uiState.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = { viewModel.clearError() }) { Text("Reintentar") }
                     }
                 }
-
-                uiState.error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = uiState.error ?: "",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Button(onClick = { viewModel.clearError() }) {
-                                Text("Reintentar")
-                            }
+                uiState.isEmpty -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("🔍", style = MaterialTheme.typography.displayMedium)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "No encontramos prestadores\ncon esos filtros",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (uiState.activeFilter.hasActiveFilters) {
+                            Spacer(Modifier.height(12.dp))
+                            TextButton(onClick = { viewModel.clearFilters() }) { Text("Limpiar filtros") }
                         }
                     }
                 }
-
-                uiState.isEmpty -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("🔍", style = MaterialTheme.typography.displayMedium)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "No encontramos prestadores\ncon esos filtros",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (uiState.activeFilter.hasActiveFilters) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                TextButton(onClick = { viewModel.clearFilters() }) {
-                                    Text("Limpiar filtros")
-                                }
-                            }
-                        }
-                    }
-                }
-
                 else -> {
-                    // Contador de resultados
                     Text(
-                        text = "${uiState.providers.size} prestadores encontrados",
+                        "${uiState.providers.size} prestadores encontrados",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
-
-                    // Lista de prestadores
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(
-                            items = uiState.providers,
-                            key = { it.uid }
-                        ) { provider ->
+                        items(items = uiState.providers, key = { it.uid }) { provider ->
                             ProviderCard(
                                 provider = provider,
                                 onClick = { onNavigateToProviderDetail(provider.uid) }

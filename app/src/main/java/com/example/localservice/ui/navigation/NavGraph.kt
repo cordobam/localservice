@@ -12,8 +12,8 @@ import com.example.localservice.domain.model.UserRole
 import com.example.localservice.ui.screens.auth.LoginScreen
 import com.example.localservice.ui.screens.auth.RegisterScreen
 import com.example.localservice.ui.screens.auth.RolePickerScreen
+import com.example.localservice.ui.screens.provider.ProviderSetupScreen
 import com.example.localservice.ui.viewmodel.AuthViewModel
-import com.servilocal.app.ui.navigation.providerNavGraph
 
 @Composable
 fun NavGraph(
@@ -22,8 +22,6 @@ fun NavGraph(
     val authViewModel: AuthViewModel = hiltViewModel()
     val uiState by authViewModel.uiState.collectAsState()
 
-    // Punto de entrada: si ya hay sesión vamos directo a la pantalla del rol,
-    // si no, mandamos a Login.
     val startDestination = when {
         uiState.isLoggedIn && uiState.currentUser?.role == UserRole.CLIENT   -> Screen.Search.route
         uiState.isLoggedIn && uiState.currentUser?.role == UserRole.PROVIDER -> Screen.Dashboard.route
@@ -61,12 +59,31 @@ fun NavGraph(
             RolePickerScreen(
                 viewModel = authViewModel,
                 onRoleSelected = { role ->
-                    val dest = if (role == UserRole.CLIENT) Screen.Search.route
-                               else Screen.Dashboard.route
-                    navController.navigate(dest) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
+                    if (role == UserRole.PROVIDER) {
+                        // Prestador → configura su perfil primero
+                        navController.navigate(Screen.ProviderSetup.route)
+                        {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    } else {
+                        // Cliente → va directo a la búsqueda
+                        navController.navigate(Screen.Search.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
                     }
                 }
+            )
+        }
+
+        // Setup del prestador — solo al registrarse
+        composable(Screen.ProviderSetup.route) {
+            ProviderSetupScreen(
+                onSetupComplete = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.ProviderSetup.route) { inclusive = true }
+                    }
+                },
+                authViewModel = authViewModel
             )
         }
 
