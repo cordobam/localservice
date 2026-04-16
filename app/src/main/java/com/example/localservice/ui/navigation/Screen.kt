@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
     object Tracking       : Screen("tracking/{slug}") {
         fun createRoute(slug: String) = "tracking/$slug"
     }
+    object ClientMain    : Screen("client_main")
 
     // Prestador (ServiLocal Pro)
     object Dashboard        : Screen("dashboard")
@@ -36,4 +37,7 @@ sealed class Screen(val route: String) {
     object MyProfile        : Screen("my_profile")
     object Agenda           : Screen("agenda")
     object Earnings         : Screen("earnings")
+
+    object ProviderSetupRoute: Screen("provider_setup_route")
+
 }
