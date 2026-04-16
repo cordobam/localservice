@@ -3,6 +3,7 @@ package com.example.localservice.data.repository
 import com.example.localservice.data.remote.firebase.BookingFirestoreSource
 import com.example.localservice.domain.model.Booking
 import com.example.localservice.domain.model.BookingStatus
+import com.example.localservice.domain.model.Stage
 import com.example.localservice.domain.repository.BookingRepository
 import com.example.localservice.util.Result
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,7 @@ class BookingRepositoryImpl @Inject constructor(
     override suspend fun createBooking(booking: Booking) = source.createBooking(booking)
     override fun getBookingsForClient(clientUid: String) = source.getBookingsForClient(clientUid)
     override fun getBookingsForProvider(providerUid: String) = source.getBookingsForProvider(providerUid)
-    override suspend fun updateBookingStatus(bookingId: String, status: BookingStatus) =
-        source.updateBookingStatus(bookingId, status)
+    override suspend fun updateBookingStatus(bookingId: String, status: BookingStatus) = source.updateBookingStatus(bookingId, status)
+    override suspend fun updateStages(bookingId: String, stages: List<Stage>) = source.updateStages(bookingId, stages)
+    override fun getBookingBySlug(slug: String) = source.getBookingBySlug(slug)
 }

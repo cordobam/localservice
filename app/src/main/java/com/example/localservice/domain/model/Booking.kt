@@ -8,20 +8,16 @@ data class Booking(
     val clientName: String = "",
     val clientPhone: String = "",
     val category: ServiceCategory = ServiceCategory.OTHER,
-    val description: String = "",       // qué necesita el cliente
+    val description: String = "",
     val status: BookingStatus = BookingStatus.PENDING,
-    val budgetAmount: Int = 0,          // presupuesto enviado por el prestador
+    val budgetAmount: Int = 0,
     val budgetApproved: Boolean = false,
-    val publicSlug: String = "",        // link público de seguimiento
+    val publicSlug: String = "",
+    val stages: List<Stage> = emptyList(),   // ← nuevo
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L
 )
 
 enum class BookingStatus {
-    PENDING,            // cliente solicitó, esperando respuesta
-    BUDGET_SENT,        // prestador mandó presupuesto
-    BUDGET_APPROVED,    // cliente aprobó presupuesto
-    IN_PROGRESS,        // trabajo en curso
-    COMPLETED,          // trabajo terminado
-    CANCELLED           // cancelado por cualquiera de las partes
+    PENDING, BUDGET_SENT, BUDGET_APPROVED, IN_PROGRESS, COMPLETED, CANCELLED
 }
