@@ -22,6 +22,12 @@ import com.example.localservice.ui.screens.provider.ProviderSetupScreen
 import com.example.localservice.ui.screens.provider.StageEditorScreen
 import com.example.localservice.ui.viewmodel.AuthViewModel
 
+import android.net.Uri
+import androidx.navigation.navArgument
+import com.example.localservice.ui.screens.client.ChatScreen
+import com.example.localservice.ui.screens.client.ReviewScreen
+import com.example.localservice.ui.screens.provider.ProviderProfileScreen
+
 @Composable
 fun NavGraph(navController: NavHostController = rememberNavController()) {
     val authViewModel: AuthViewModel = hiltViewModel()
@@ -88,6 +94,12 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 onNavigateToTracking = { slug ->
                     navController.navigate(Screen.Tracking.createRoute(slug))
                 },
+                onNavigateToChat = { bookingId, providerName ->
+                    navController.navigate(Screen.Chat.createRoute(bookingId, providerName))
+                },
+                onNavigateToReview = { providerUid, providerName ->
+                    navController.navigate(Screen.Review.createRoute(providerUid, providerName))
+                },
                 authViewModel = authViewModel
             )
         }
@@ -136,6 +148,48 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 bookingId = bookingId,
                 onBack = { navController.popBackStack() },
                 onSaved = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "chat/{bookingId}/{providerName}",
+            arguments = listOf(
+                navArgument("bookingId")    { type = NavType.StringType },
+                navArgument("providerName") { type = NavType.StringType }
+            )
+        ) { backStack ->
+            val bookingId    = backStack.arguments?.getString("bookingId") ?: ""
+            val providerName = backStack.arguments?.getString("providerName") ?: ""
+            ChatScreen(
+                bookingId    = bookingId,
+                providerName = providerName,
+                onBack       = { navController.popBackStack() },
+                authViewModel = authViewModel
+            )
+        }
+
+        composable(
+            route = "review/{providerUid}/{providerName}",
+            arguments = listOf(
+                navArgument("providerUid")  { type = NavType.StringType },
+                navArgument("providerName") { type = NavType.StringType }
+            )
+        ) { backStack ->
+            val providerUid  = backStack.arguments?.getString("providerUid") ?: ""
+            val providerName = backStack.arguments?.getString("providerName") ?: ""
+            ReviewScreen(
+                providerUid  = providerUid,
+                providerName = providerName,
+                onBack       = { navController.popBackStack() },
+                onSubmitted  = { navController.popBackStack() },
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("provider_profile") {
+            ProviderProfileScreen(
+                onBack        = { navController.popBackStack() },
+                authViewModel = authViewModel
             )
         }
     }

@@ -41,6 +41,8 @@ fun ClientMainScreen(
     onLogout: () -> Unit,
     onNavigateToProviderDetail: (String) -> Unit,
     onNavigateToTracking: (String) -> Unit,
+    onNavigateToChat: (String, String) -> Unit,
+    onNavigateToReview: (String, String) -> Unit,
     authViewModel: AuthViewModel
 ) {
     val tabNavController = rememberNavController()
@@ -89,6 +91,8 @@ fun ClientMainScreen(
                 MyBookingsScreen(
                     onBack = { tabNavController.popBackStack() },
                     onNavigateToTracking = onNavigateToTracking,
+                    onNavigateToChat = onNavigateToChat,
+                    onNavigateToReview = onNavigateToReview,
                     authViewModel = authViewModel
                 )
             }

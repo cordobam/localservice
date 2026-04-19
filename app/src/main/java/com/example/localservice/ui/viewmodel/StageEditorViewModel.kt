@@ -31,20 +31,22 @@ class StageEditorViewModel @Inject constructor(
     private var currentBookingId = ""
 
     fun init(bookingId: String) {
+        if (currentBookingId == bookingId) return
         currentBookingId = bookingId
+
         viewModelScope.launch {
-            // Carga el booking para obtener la categoría y cargar etapas predefinidas
-            bookingRepository.getBookingsForProvider("").take(1).collect { result ->
-                if (result is Result.Success) {
-                    val booking = result.data.firstOrNull { it.id == bookingId }
-                    booking?.let {
-                        // Si el booking ya tiene etapas las carga, sino carga las predefinidas
-                        val stages = if (it.stages.isEmpty())
-                            DefaultStages.forCategory(it.category)
-                        else it.stages
-                        _uiState.update { s -> s.copy(stages = stages) }
-                    }
+            // Carga el booking directo por id en lugar de filtrar la lista
+            when (val result = bookingRepository.getBookingById(bookingId)) {
+                is Result.Success -> {
+                    val booking = result.data
+                    val stages = if (booking.stages.isEmpty())
+                        DefaultStages.forCategory(booking.category)
+                    else
+                        booking.stages  // ← carga las etapas existentes
+                    _uiState.update { it.copy(stages = stages) }
                 }
+                is Result.Error -> _uiState.update { it.copy(error = result.message) }
+                else -> Unit
             }
         }
     }

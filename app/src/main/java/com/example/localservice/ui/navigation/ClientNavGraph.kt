@@ -48,6 +48,12 @@ fun NavGraphBuilder.clientNavGraph(
             onNavigateToTracking = { slug ->
                 navController.navigate(Screen.Tracking.createRoute(slug))
             },
+            onNavigateToChat = { bookingId, providerName ->
+                navController.navigate(Screen.Chat.createRoute(bookingId, providerName))
+            },
+            onNavigateToReview = { providerUid, providerName ->
+                navController.navigate(Screen.Review.createRoute(providerUid, providerName))
+            },
             authViewModel = authViewModel
         )
     }
