@@ -1,5 +1,5 @@
 package com.example.localservice.ui.navigation
-
+import android.net.Uri
 sealed class Screen(val route: String) {
 
     // Auth
@@ -39,5 +39,13 @@ sealed class Screen(val route: String) {
     object Earnings         : Screen("earnings")
 
     object ProviderSetupRoute: Screen("provider_setup_route")
+
+    object Chat           : Screen("chat/{bookingId}/{providerName}") {
+        fun createRoute(bookingId: String, providerName: String) = "chat/$bookingId/${Uri.encode(providerName)}"
+    }
+    object Review         : Screen("review/{providerUid}/{providerName}") {
+         fun createRoute(providerUid: String, providerName: String) = "review/$providerUid/${Uri.encode(providerName)}"
+     }
+     object ProviderProfile : Screen("provider_profile")
 
 }

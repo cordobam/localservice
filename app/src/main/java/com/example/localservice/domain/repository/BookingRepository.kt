@@ -13,4 +13,5 @@ interface BookingRepository {
     suspend fun updateBookingStatus(bookingId: String, status: BookingStatus): Result<Unit>
     suspend fun updateStages(bookingId: String, stages: List<Stage>): Result<Unit>   // ← nuevo
     fun getBookingBySlug(slug: String): Flow<Result<Booking>>                        // ← nuevo
+    suspend fun getBookingById(bookingId: String): Result<Booking>
 }

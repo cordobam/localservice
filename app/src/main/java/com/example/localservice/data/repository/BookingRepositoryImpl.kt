@@ -20,4 +20,5 @@ class BookingRepositoryImpl @Inject constructor(
     override suspend fun updateBookingStatus(bookingId: String, status: BookingStatus) = source.updateBookingStatus(bookingId, status)
     override suspend fun updateStages(bookingId: String, stages: List<Stage>) = source.updateStages(bookingId, stages)
     override fun getBookingBySlug(slug: String) = source.getBookingBySlug(slug)
+    override suspend fun getBookingById(bookingId: String) = source.getBookingById(bookingId)
 }

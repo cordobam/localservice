@@ -26,13 +26,14 @@ import java.util.Locale
 fun MyBookingsScreen(
     onBack: () -> Unit,
     onNavigateToTracking: (String) -> Unit,
+    onNavigateToChat: (String, String) -> Unit, // Nuevo
+    onNavigateToReview: (String, String) -> Unit, // Nuevo
     authViewModel: AuthViewModel,
     viewModel: MyBookingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val authState by authViewModel.uiState.collectAsState()
 
-    // Inicializa con el uid del cliente logueado
     LaunchedEffect(authState.currentUser) {
         authState.currentUser?.let { viewModel.init(it.uid) }
     }
@@ -59,7 +60,6 @@ fun MyBookingsScreen(
             )
         }
     ) { paddingValues ->
-
         when {
             uiState.isLoading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -88,37 +88,30 @@ fun MyBookingsScreen(
                         .padding(paddingValues),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-
-                    // --- Pedidos activos ---
                     if (uiState.activeBookings.isNotEmpty()) {
                         item {
                             Text(
                                 "En curso",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(
-                                    start = 16.dp, end = 16.dp,
-                                    top = 16.dp, bottom = 8.dp
-                                )
+                                modifier = Modifier.padding(16.dp, 16.dp, 16.dp, 8.dp)
                             )
                         }
 
-                        items(
-                            items = uiState.activeBookings,
-                            key = { it.id }
-                        ) { booking ->
+                        items(items = uiState.activeBookings, key = { it.id }) { booking ->
                             ClientBookingCard(
                                 booking = booking,
                                 isActioning = uiState.isActioning,
                                 onApproveBudget = { viewModel.approveBudget(booking.id) },
                                 onRejectBudget = { viewModel.rejectBudget(booking.id) },
                                 onTrack = { onNavigateToTracking(booking.publicSlug) },
+                                onChat = { onNavigateToChat(booking.id, booking.providerName) },
+                                onReview = { onNavigateToReview(booking.providerUid, booking.providerName) },
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                             )
                         }
                     }
 
-                    // --- Pedidos pasados ---
                     if (uiState.pastBookings.isNotEmpty()) {
                         item {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -126,19 +119,19 @@ fun MyBookingsScreen(
                                 "Historial",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(
-                                    start = 16.dp, end = 16.dp,
-                                    top = 8.dp, bottom = 8.dp
-                                )
+                                modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 8.dp)
                             )
                         }
 
-                        items(
-                            items = uiState.pastBookings,
-                            key = { "past_${it.id}" }
-                        ) { booking ->
-                            BookingCard(
+                        items(items = uiState.pastBookings, key = { "past_${it.id}" }) { booking ->
+                            ClientBookingCard(
                                 booking = booking,
+                                isActioning = uiState.isActioning,
+                                onApproveBudget = {},
+                                onRejectBudget = {},
+                                onTrack = {},
+                                onChat = { onNavigateToChat(booking.id, booking.providerName) },
+                                onReview = { onNavigateToReview(booking.providerUid, booking.providerName) },
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                             )
                         }
@@ -149,7 +142,6 @@ fun MyBookingsScreen(
     }
 }
 
-// Card especializada para el cliente — muestra acciones según el estado
 @Composable
 private fun ClientBookingCard(
     booking: Booking,
@@ -157,18 +149,16 @@ private fun ClientBookingCard(
     onApproveBudget: () -> Unit,
     onRejectBudget: () -> Unit,
     onTrack: () -> Unit,
+    onChat: () -> Unit = {},
+    onReview: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(
-            0.5.dp, MaterialTheme.colorScheme.outlineVariant
-        )
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -183,7 +173,6 @@ private fun ClientBookingCard(
             }
 
             Spacer(modifier = Modifier.height(6.dp))
-
             Text(
                 text = booking.description,
                 style = MaterialTheme.typography.bodySmall,
@@ -191,14 +180,10 @@ private fun ClientBookingCard(
                 maxLines = 2
             )
 
-            // Mensaje de estado amigable
             Spacer(modifier = Modifier.height(10.dp))
             StatusMessage(booking = booking)
 
-            // Acciones según estado
             when (booking.status) {
-
-                // Prestador mandó presupuesto → cliente puede aprobar o rechazar
                 BookingStatus.BUDGET_SENT -> {
                     if (booking.budgetAmount > 0) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -207,10 +192,7 @@ private fun ClientBookingCard(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                text = "Presupuesto: $${
-                                    NumberFormat.getNumberInstance(Locale("es", "AR"))
-                                        .format(booking.budgetAmount)
-                                }",
+                                text = "Presupuesto: $${NumberFormat.getNumberInstance(Locale("es", "AR")).format(booking.budgetAmount)}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -226,9 +208,7 @@ private fun ClientBookingCard(
                             onClick = onRejectBudget,
                             enabled = !isActioning,
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) { Text("Rechazar") }
 
                         Button(
@@ -236,24 +216,34 @@ private fun ClientBookingCard(
                             enabled = !isActioning,
                             modifier = Modifier.weight(1f)
                         ) {
-                            if (isActioning) CircularProgressIndicator(
-                                Modifier.size(16.dp), strokeWidth = 2.dp
-                            )
+                            if (isActioning) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                             else Text("Aprobar")
                         }
                     }
                 }
 
-                // Trabajo en curso → puede ver el seguimiento
                 BookingStatus.IN_PROGRESS,
                 BookingStatus.BUDGET_APPROVED -> {
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedButton(
-                        onClick = onTrack,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Ver seguimiento del trabajo")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = onChat,
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Chat") }
+
+                        Button(
+                            onClick = onTrack,
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Ver seguimiento") }
                     }
+                }
+
+                BookingStatus.COMPLETED -> {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = onReview,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Calificar servicio") }
                 }
 
                 else -> Unit

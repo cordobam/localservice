@@ -59,6 +59,16 @@ class BookingFirestoreSource @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    suspend fun getBookingById(bookingId: String): Result<Booking> {
+        return try {
+            val doc = collection.document(bookingId).get().await()
+            val booking = doc.toBooking() ?: return Result.Error("Trabajo no encontrado")
+            Result.Success(booking)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error", e)
+        }
+    }
+
     // Busca por slug público — para TrackingScreen
     fun getBookingBySlug(slug: String): Flow<Result<Booking>> = callbackFlow {
         trySend(Result.Loading)
