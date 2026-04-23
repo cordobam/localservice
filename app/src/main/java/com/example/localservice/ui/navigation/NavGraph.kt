@@ -21,8 +21,13 @@ import com.example.localservice.ui.screens.provider.DashboardScreen
 import com.example.localservice.ui.screens.provider.ProviderSetupScreen
 import com.example.localservice.ui.screens.provider.StageEditorScreen
 import com.example.localservice.ui.viewmodel.AuthViewModel
+import com.example.localservice.ui.screens.provider.ProjectDetailScreen
+import com.example.localservice.ui.screens.provider.ProviderProfileScreen
+import com.example.localservice.ui.screens.provider.EarningsScreen
+
 
 import android.net.Uri
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.navArgument
 import com.example.localservice.ui.screens.client.ChatScreen
 import com.example.localservice.ui.screens.client.ReviewScreen
@@ -34,7 +39,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
     val uiState by authViewModel.uiState.collectAsState()
 
     val startDestination = when {
-        uiState.isLoggedIn && uiState.currentUser?.role == UserRole.CLIENT   -> Screen.ClientMain.route
+        uiState.isLoggedIn && uiState.currentUser?.role == UserRole.CLIENT -> Screen.ClientMain.route
         uiState.isLoggedIn && uiState.currentUser?.role == UserRole.PROVIDER -> Screen.Dashboard.route
         else -> Screen.Login.route
     }
@@ -46,8 +51,13 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) },
                 onLoginSuccess = { role ->
-                    val dest = if (role == UserRole.CLIENT) Screen.ClientMain.route else Screen.Dashboard.route
-                    navController.navigate(dest) { popUpTo(Screen.Login.route) { inclusive = true } }
+                    val dest =
+                        if (role == UserRole.CLIENT) Screen.ClientMain.route else Screen.Dashboard.route
+                    navController.navigate(dest) {
+                        popUpTo(Screen.Login.route) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }
@@ -64,8 +74,13 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             RolePickerScreen(
                 viewModel = authViewModel,
                 onRoleSelected = { role ->
-                    val dest = if (role == UserRole.PROVIDER) Screen.ProviderSetup.route else Screen.ClientMain.route
-                    navController.navigate(dest) { popUpTo(Screen.Login.route) { inclusive = true } }
+                    val dest =
+                        if (role == UserRole.PROVIDER) Screen.ProviderSetup.route else Screen.ClientMain.route
+                    navController.navigate(dest) {
+                        popUpTo(Screen.Login.route) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }
@@ -128,9 +143,10 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             DashboardScreen(
                 onNavigateToRequests = { },
                 onNavigateToProject = { bookingId ->
-                    navController.navigate(Screen.StageEditor.createRoute(bookingId))
+                    navController.navigate(Screen.ProjectDetail.createRoute(bookingId))
                 },
-                onNavigateToProfile = { },
+                onNavigateToProfile = { navController.navigate(Screen.MyProfile.route) },
+                onNavigateToEarnings = { navController.navigate(Screen.Earnings.route) },
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
@@ -152,18 +168,35 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         composable(
+            route = Screen.ProjectDetail.route,
+            arguments = listOf(navArgument("projectId") { type = NavType.StringType })
+        ) { backStack ->
+            val bookingId = backStack.arguments?.getString("projectId") ?: ""
+            ProjectDetailScreen(
+                bookingId = bookingId,
+                onBack = { navController.popBackStack() },
+                onNavigateToStageEditor = { id ->
+                    navController.navigate(Screen.StageEditor.createRoute(id))
+                },
+                onNavigateToChat = { id, clientName ->
+                    navController.navigate("chat/$id/${Uri.encode(clientName)}")
+                }
+            )
+        }
+
+        composable(
             route = "chat/{bookingId}/{providerName}",
             arguments = listOf(
-                navArgument("bookingId")    { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
                 navArgument("providerName") { type = NavType.StringType }
             )
         ) { backStack ->
-            val bookingId    = backStack.arguments?.getString("bookingId") ?: ""
+            val bookingId = backStack.arguments?.getString("bookingId") ?: ""
             val providerName = backStack.arguments?.getString("providerName") ?: ""
             ChatScreen(
-                bookingId    = bookingId,
+                bookingId = bookingId,
                 providerName = providerName,
-                onBack       = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
                 authViewModel = authViewModel
             )
         }
@@ -171,25 +204,48 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(
             route = "review/{providerUid}/{providerName}",
             arguments = listOf(
-                navArgument("providerUid")  { type = NavType.StringType },
+                navArgument("providerUid") { type = NavType.StringType },
                 navArgument("providerName") { type = NavType.StringType }
             )
         ) { backStack ->
-            val providerUid  = backStack.arguments?.getString("providerUid") ?: ""
+            val providerUid = backStack.arguments?.getString("providerUid") ?: ""
             val providerName = backStack.arguments?.getString("providerName") ?: ""
             ReviewScreen(
-                providerUid  = providerUid,
+                providerUid = providerUid,
                 providerName = providerName,
-                onBack       = { navController.popBackStack() },
-                onSubmitted  = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+                onSubmitted = { navController.popBackStack() },
                 authViewModel = authViewModel
             )
         }
 
         composable("provider_profile") {
             ProviderProfileScreen(
-                onBack        = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
                 authViewModel = authViewModel
+            )
+        }
+
+        // Perfil del prestador
+        composable(Screen.MyProfile.route) {
+            ProviderProfileScreen(
+                onBack = { navController.popBackStack() },
+                authViewModel = authViewModel
+            )
+        }
+
+        // Panel de ingresos
+        composable(Screen.Earnings.route) {
+            val authState by authViewModel.uiState.collectAsState()
+            val providerUid = authState.currentUser?.uid ?: ""
+            LaunchedEffect(providerUid) {
+                // el ViewModel se inicializa en la pantalla
+            }
+            EarningsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToProject = { bookingId ->
+                    navController.navigate(Screen.ProjectDetail.createRoute(bookingId))
+                }
             )
         }
     }

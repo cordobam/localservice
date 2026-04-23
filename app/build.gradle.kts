@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.runtime)
     debugImplementation(libs.androidx.ui.tooling)
 
     // --- Navigation ---
@@ -93,4 +94,5 @@ dependencies {
     // implementation(libs.play.services.location)
 
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.compose.material:material-icons-extended")
 }
