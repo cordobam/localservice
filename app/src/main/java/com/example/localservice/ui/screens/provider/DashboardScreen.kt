@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +26,7 @@ fun DashboardScreen(
     onNavigateToRequests: () -> Unit,
     onNavigateToProject: (String) -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToEarnings: () -> Unit,
     onLogout: () -> Unit,
     authViewModel: AuthViewModel,
     viewModel: DashboardViewModel = hiltViewModel()
@@ -75,6 +77,9 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text("ServiLocal Pro") },
                 actions = {
+                    IconButton(onClick = onNavigateToEarnings) {
+                        Icon(Icons.Outlined.BarChart, contentDescription = "Ingresos")
+                     }
                     IconButton(onClick = onNavigateToProfile) {
                         Icon(Icons.Default.Person, contentDescription = "Perfil")
                     }
@@ -248,6 +253,14 @@ fun DashboardScreen(
                         }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                }
+                item {
+                    TextButton(
+                        onClick = onNavigateToEarnings, // O la navegación que prefieras para historial
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Ver historial completo")
+                    }
                 }
             }
 
