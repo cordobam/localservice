@@ -120,7 +120,8 @@ class ProviderFirestoreSource @Inject constructor(
                 reviewCount = getLong("reviewCount")?.toInt() ?: 0,
                 priceFrom   = getLong("priceFrom")?.toInt() ?: 0,
                 isAvailable = getBoolean("isAvailable") ?: true,
-                createdAt   = getLong("createdAt") ?: 0L
+                createdAt   = getLong("createdAt") ?: 0L,
+                mpAlias     = getString("mpAlias") ?: ""
             )
         } catch (e: Exception) {
             android.util.Log.e("ServiLocal", "Error mapeando provider ${id}: ${e.message}")
@@ -141,7 +142,8 @@ class ProviderFirestoreSource @Inject constructor(
         "reviewCount" to reviewCount,
         "priceFrom"   to priceFrom,
         "isAvailable" to isAvailable,
-        "createdAt"   to createdAt
+        "createdAt"   to createdAt,
+        "mpAlias"     to mpAlias
     )
 
     // Fórmula de Haversine para calcular distancia entre dos coordenadas en km

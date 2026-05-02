@@ -22,7 +22,9 @@ data class ProviderProfileUiState(
     val isAvailable: Boolean = true,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+
+    val mpAlias: String = ""
 )
 
 @HiltViewModel
@@ -50,7 +52,8 @@ class ProviderProfileViewModel @Inject constructor(
                             city        = p.city,
                             priceFrom   = if (p.priceFrom > 0) p.priceFrom.toString() else "",
                             category    = p.category,
-                            isAvailable = p.isAvailable
+                            isAvailable = p.isAvailable,
+                            mpAlias     = p.mpAlias
                         )
                     }
                 }
@@ -77,7 +80,8 @@ class ProviderProfileViewModel @Inject constructor(
                 zone        = state.zone.trim(),
                 city        = state.city.trim(),
                 priceFrom   = state.priceFrom.toIntOrNull() ?: 0,
-                isAvailable = state.isAvailable
+                isAvailable = state.isAvailable,
+                mpAlias = state.mpAlias.trim()
             )
             when (val result = providerRepository.updateProviderProfile(updated)) {
                 is Result.Success -> {
@@ -92,4 +96,6 @@ class ProviderProfileViewModel @Inject constructor(
 
     fun clearSaved() = _uiState.update { it.copy(isSaved = false) }
     fun clearError() = _uiState.update { it.copy(error = null) }
+
+    fun onMpAliasChanged(v: String) = _uiState.update { it.copy(mpAlias = v) }
 }

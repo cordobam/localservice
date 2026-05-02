@@ -1,40 +1,48 @@
 package com.example.localservice.ui.screens.client
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.List
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.localservice.ui.viewmodel.AuthViewModel
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.fillMaxWidth
 
-// Rutas internas del tab bar del cliente
 private sealed class ClientTab(
     val route: String,
     val label: String,
     val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
     val unselectedIcon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
-    object Search     : ClientTab("tab_search",    "Buscar",    Icons.Filled.Search, Icons.Outlined.Search)
-    object MyBookings : ClientTab("tab_bookings",  "Mis pedidos", Icons.Filled.List, Icons.Outlined.List)
-    object Profile    : ClientTab("tab_profile",   "Perfil",    Icons.Filled.Person, Icons.Outlined.Person)
+    object Search     : ClientTab("tab_search",   "Buscar",     Icons.Filled.Search, Icons.Outlined.Search)
+    object Map        : ClientTab("tab_map",      "Mapa",       Icons.Filled.Map,    Icons.Outlined.Map)
+    object MyBookings : ClientTab("tab_bookings", "Mis pedidos",Icons.Filled.List,   Icons.Outlined.List)
+    object Profile    : ClientTab("tab_profile",  "Perfil",     Icons.Filled.Person, Icons.Outlined.Person)
 }
 
-private val tabs = listOf(ClientTab.Search, ClientTab.MyBookings, ClientTab.Profile)
+private val tabs = listOf(
+    ClientTab.Search,
+    ClientTab.Map,
+    ClientTab.MyBookings,
+    ClientTab.Profile
+)
 
 @Composable
 fun ClientMainScreen(
@@ -87,6 +95,14 @@ fun ClientMainScreen(
                 )
             }
 
+            // Tab del mapa
+            composable(ClientTab.Map.route) {
+                MapScreen(
+                    onBack = { tabNavController.popBackStack() },
+                    onNavigateToProviderDetail = onNavigateToProviderDetail
+                )
+            }
+
             composable(ClientTab.MyBookings.route) {
                 MyBookingsScreen(
                     onBack = { tabNavController.popBackStack() },
@@ -107,7 +123,6 @@ fun ClientMainScreen(
     }
 }
 
-// Perfil del cliente — simple por ahora
 @Composable
 private fun ClientProfileScreen(
     onLogout: () -> Unit,
@@ -116,17 +131,24 @@ private fun ClientProfileScreen(
     val authState by authViewModel.uiState.collectAsState()
     val user = authState.currentUser
 
-    androidx.compose.foundation.layout.Column(
-        modifier = Modifier.padding(24.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+        Spacer(Modifier.weight(1f))
         Text(user?.name ?: "", style = MaterialTheme.typography.headlineSmall)
-        Text(user?.email ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.weight(1f))
-        OutlinedButton(onClick = onLogout, modifier = androidx.compose.ui.Modifier.fillMaxWidth()) {
-            Text("Cerrar sesión")
-        }
-        androidx.compose.foundation.layout.Spacer(Modifier.weight(0.5f))
+        Text(
+            user?.email ?: "",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.weight(1f))
+        OutlinedButton(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Cerrar sesión") }
+        Spacer(Modifier.weight(0.5f))
     }
 }
