@@ -140,6 +140,15 @@ fun ProviderProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            OutlinedTextField(
+                value = uiState.mpAlias,
+                onValueChange = { viewModel.onMpAliasChanged(it) },
+                label = { Text("Alias de Mercado Pago") },
+                placeholder = { Text("Ej: juan.gomez") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             HorizontalDivider()
 
             Text("Descripción", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

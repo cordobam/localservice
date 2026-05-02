@@ -14,5 +14,6 @@ data class Provider(
     val reviewCount: Int = 0,
     val priceFrom: Int = 0,          // precio orientativo desde
     val isAvailable: Boolean = true,
-    val createdAt: Long = 0L
+    val createdAt: Long = 0L,
+    val mpAlias: String = ""
 )
