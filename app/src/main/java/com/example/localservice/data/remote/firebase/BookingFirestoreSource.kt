@@ -93,6 +93,20 @@ class BookingFirestoreSource @Inject constructor(
         } catch (e: Exception) { Result.Error(e.message ?: "Error", e) }
     }
 
+    suspend fun updateBookingBudget(bookingId: String, amount: Int, note: String): Result<Unit> {
+        return try {
+            collection.document(bookingId).update(
+                mapOf(
+                    "status" to BookingStatus.BUDGET_SENT.name,
+                    "budgetAmount" to amount,
+                    "budgetNote" to note,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            ).await()
+            Result.Success(Unit)
+        } catch (e: Exception) { Result.Error(e.message ?: "Error al enviar presupuesto", e) }
+    }
+
     // Guarda las etapas en el documento del booking
     suspend fun updateStages(bookingId: String, stages: List<Stage>): Result<Unit> {
         return try {
@@ -135,6 +149,7 @@ class BookingFirestoreSource @Inject constructor(
                 status         = BookingStatus.valueOf(getString("status") ?: "PENDING"),
                 budgetAmount   = getLong("budgetAmount")?.toInt() ?: 0,
                 budgetApproved = getBoolean("budgetApproved") ?: false,
+                budgetNote     = getString("budgetNote") ?: "",
                 publicSlug     = getString("publicSlug") ?: "",
                 stages         = stagesList,
                 createdAt      = getLong("createdAt") ?: 0L,
@@ -157,6 +172,7 @@ class BookingFirestoreSource @Inject constructor(
         "status"         to status.name,
         "budgetAmount"   to budgetAmount,
         "budgetApproved" to budgetApproved,
+        "budgetNote"     to budgetNote,
         "publicSlug"     to publicSlug,
         "stages"         to stages.map { it.toMap() },
         "createdAt"      to createdAt,

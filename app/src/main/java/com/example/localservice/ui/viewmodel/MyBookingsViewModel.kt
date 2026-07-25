@@ -13,10 +13,10 @@ import javax.inject.Inject
 
 data class MyBookingsUiState(
     val isLoading: Boolean = true,
-    val activeBookings: List<Booking> = emptyList(),    // pendientes + en curso
-    val pastBookings: List<Booking> = emptyList(),      // completados + cancelados
+    val activeBookings: List<Booking> = emptyList(),
+    val pastBookings: List<Booking> = emptyList(),
+    val pendingBudgetCount: Int = 0,
     val error: String? = null,
-    // Para aprobar presupuesto
     val isActioning: Boolean = false,
     val successMessage: String? = null
 )
@@ -53,11 +53,15 @@ class MyBookingsViewModel @Inject constructor(
                                 BookingStatus.CANCELLED
                             )
                         }
+                        val pendingBudgetCount = all.count {
+                            it.status == BookingStatus.BUDGET_SENT
+                        }
                         _uiState.update {
                             it.copy(
-                                isLoading      = false,
-                                activeBookings = active,
-                                pastBookings   = past
+                                isLoading          = false,
+                                activeBookings     = active,
+                                pastBookings       = past,
+                                pendingBudgetCount = pendingBudgetCount
                             )
                         }
                     }
