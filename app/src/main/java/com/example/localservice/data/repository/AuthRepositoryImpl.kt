@@ -1,5 +1,7 @@
 package com.example.localservice.data.repository
 
+import com.example.localservice.data.local.dao.UserDao
+import com.example.localservice.data.local.entity.UserEntity
 import com.example.localservice.data.remote.firebase.AuthFirebaseSource
 import com.example.localservice.domain.model.User
 import com.example.localservice.domain.model.UserRole
@@ -11,42 +13,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
-    private val source: AuthFirebaseSource
+    private val source: AuthFirebaseSource,
+    private val userDao: UserDao
 ) : AuthRepository {
-
-    // Emite el usuario actual al arrancar. Si no hay sesión emite null.
-    /*override fun getCurrentUser(): Flow<User?> = flow {
-        val firebaseUser = source.currentFirebaseUser()
-        if (firebaseUser == null) {
-            emit(null)
-            return@flow
-        }
-        val result = source.getUserFromFirestore(firebaseUser.uid)
-        emit(if (result is Result.Success) result.data else null)
-    }
-
-    override suspend fun login(email: String, password: String): Result<User> =
-        source.login(email, password)
-
-    override suspend fun register(
-        name: String,
-        email: String,
-        password: String,
-        phone: String,
-        role: UserRole
-    ): Result<User> = source.register(name, email, password, phone, role)
-
-    override suspend fun logout() = source.logout()
-
-    override suspend fun isLoggedIn(): Boolean =
-        source.currentFirebaseUser() != null */
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { auth ->
@@ -57,7 +33,11 @@ class AuthRepositoryImpl @Inject constructor(
             } else {
                 CoroutineScope(Dispatchers.IO).launch {
                     val result = source.getUserFromFirestore(firebaseUser.uid)
-                    val user = if (result is Result.Success) result.data else null
+                    if (result is Result.Success) {
+                        userDao.upsert(result.data.toEntity())
+                    }
+                    val cached = userDao.getUserById(firebaseUser.uid)
+                    val user = cached?.toDomain()
                     trySend(user)
                 }
             }
@@ -70,8 +50,13 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun login(email: String, password: String): Result<User> =
-        source.login(email, password)
+    override suspend fun login(email: String, password: String): Result<User> {
+        val result = source.login(email, password)
+        if (result is Result.Success) {
+            withContext(Dispatchers.IO) { userDao.upsert(result.data.toEntity()) }
+        }
+        return result
+    }
 
     override suspend fun register(
         name: String,
@@ -79,10 +64,36 @@ class AuthRepositoryImpl @Inject constructor(
         password: String,
         phone: String,
         role: UserRole
-    ): Result<User> = source.register(name, email, password, phone, role)
+    ): Result<User> {
+        val result = source.register(name, email, password, phone, role)
+        if (result is Result.Success) {
+            withContext(Dispatchers.IO) { userDao.upsert(result.data.toEntity()) }
+        }
+        return result
+    }
 
     override suspend fun logout() = source.logout()
 
     override suspend fun isLoggedIn(): Boolean =
         source.currentFirebaseUser() != null
+
+    private fun User.toEntity() = UserEntity(
+        uid = uid,
+        name = name,
+        email = email,
+        phone = phone,
+        role = role.name,
+        photoUrl = photoUrl,
+        createdAt = createdAt
+    )
+
+    private fun UserEntity.toDomain() = User(
+        uid = uid,
+        name = name,
+        email = email,
+        phone = phone,
+        role = UserRole.valueOf(role),
+        photoUrl = photoUrl,
+        createdAt = createdAt
+    )
 }
