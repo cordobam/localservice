@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.localservice.domain.model.Booking
 import com.example.localservice.domain.model.BookingStatus
 import com.example.localservice.ui.components.BookingCard
@@ -26,10 +25,10 @@ import java.util.Locale
 fun MyBookingsScreen(
     onBack: () -> Unit,
     onNavigateToTracking: (String) -> Unit,
-    onNavigateToChat: (String, String) -> Unit, // Nuevo
-    onNavigateToReview: (String, String) -> Unit, // Nuevo
+    onNavigateToChat: (String, String) -> Unit,
+    onNavigateToReview: (String, String) -> Unit,
     authViewModel: AuthViewModel,
-    viewModel: MyBookingsViewModel = hiltViewModel()
+    viewModel: MyBookingsViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val authState by authViewModel.uiState.collectAsState()
@@ -183,23 +182,13 @@ private fun ClientBookingCard(
             Spacer(modifier = Modifier.height(10.dp))
             StatusMessage(booking = booking)
 
+            if (booking.budgetAmount > 0 && booking.status != BookingStatus.PENDING) {
+                Spacer(modifier = Modifier.height(8.dp))
+                BudgetInfo(booking = booking)
+            }
+
             when (booking.status) {
                 BookingStatus.BUDGET_SENT -> {
-                    if (booking.budgetAmount > 0) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Surface(
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Text(
-                                text = "Presupuesto: $${NumberFormat.getNumberInstance(Locale("es", "AR")).format(booking.budgetAmount)}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
                     Spacer(modifier = Modifier.height(10.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(10.dp))
@@ -283,5 +272,32 @@ private fun StatusMessage(booking: Booking) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+private fun BudgetInfo(booking: Booking) {
+    val fmt = NumberFormat.getNumberInstance(Locale("es", "AR"))
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Text(
+                text = "Presupuesto: $${fmt.format(booking.budgetAmount)}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
+        if (booking.budgetNote.isNotBlank()) {
+            Text(
+                text = booking.budgetNote,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
     }
 }

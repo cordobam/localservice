@@ -1,5 +1,6 @@
 package com.example.localservice.ui.screens.client
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,12 +19,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.localservice.ui.viewmodel.AuthViewModel
+import com.example.localservice.ui.viewmodel.MyBookingsViewModel
 
 private sealed class ClientTab(
     val route: String,
@@ -57,6 +61,15 @@ fun ClientMainScreen(
     val navBackStack by tabNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStack?.destination?.route
 
+    val authState by authViewModel.uiState.collectAsState()
+    val activity = LocalContext.current as ComponentActivity
+    val myBookingsViewModel: MyBookingsViewModel = hiltViewModel(viewModelStoreOwner = activity)
+    val myBookingsState by myBookingsViewModel.uiState.collectAsState()
+
+    LaunchedEffect(authState.currentUser) {
+        authState.currentUser?.let { myBookingsViewModel.init(it.uid) }
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -72,10 +85,21 @@ fun ClientMainScreen(
                             }
                         },
                         icon = {
-                            Icon(
-                                imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                contentDescription = tab.label
-                            )
+                            if (tab is ClientTab.MyBookings && myBookingsState.pendingBudgetCount > 0) {
+                                BadgedBox(badge = {
+                                    Badge { Text(myBookingsState.pendingBudgetCount.toString()) }
+                                }) {
+                                    Icon(
+                                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                        contentDescription = tab.label
+                                    )
+                                }
+                            } else {
+                                Icon(
+                                    imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                    contentDescription = tab.label
+                                )
+                            }
                         },
                         label = { Text(tab.label) }
                     )
@@ -109,7 +133,8 @@ fun ClientMainScreen(
                     onNavigateToTracking = onNavigateToTracking,
                     onNavigateToChat = onNavigateToChat,
                     onNavigateToReview = onNavigateToReview,
-                    authViewModel = authViewModel
+                    authViewModel = authViewModel,
+                    viewModel = myBookingsViewModel
                 )
             }
 

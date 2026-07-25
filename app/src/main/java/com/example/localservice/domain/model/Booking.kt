@@ -12,6 +12,7 @@ data class Booking(
     val status: BookingStatus = BookingStatus.PENDING,
     val budgetAmount: Int = 0,
     val budgetApproved: Boolean = false,
+    val budgetNote: String = "",
     val publicSlug: String = "",
     val stages: List<Stage> = emptyList(),   // ← nuevo
     val createdAt: Long = 0L,

@@ -169,16 +169,15 @@ class DashboardViewModel @Inject constructor(
     fun sendBudget() {
         val bookingId = _uiState.value.budgetTargetBookingId
         val amount = _uiState.value.budgetAmount.toIntOrNull() ?: return
+        val note = _uiState.value.budgetNote
 
         viewModelScope.launch {
             _uiState.update { it.copy(isActioning = true) }
-            when (val result = bookingRepository.updateBookingStatus(bookingId, BookingStatus.BUDGET_SENT)) {
+            when (val result = bookingRepository.updateBookingBudget(bookingId, amount, note)) {
                 is Result.Success -> {
-                    // También actualizamos el monto — requiere método en repo
-                    // Por ahora usamos el cambio de estado como señal
                     _uiState.update {
                         it.copy(
-                            isActioning    = false,
+                            isActioning     = false,
                             showBudgetSheet = false,
                             successMessage  = "Presupuesto de $$amount enviado al cliente"
                         )
