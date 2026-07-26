@@ -81,7 +81,9 @@ class DashboardViewModel @Inject constructor(
                         val all = result.data
 
                         // Pedidos que esperan respuesta
-                        val pending = all.filter { it.status == BookingStatus.PENDING }
+                        val pending = all.filter {
+                            it.status in listOf(BookingStatus.PENDING, BookingStatus.BUDGET_REQUESTED)
+                        }
 
                         // Trabajos activos (presupuesto aprobado o en progreso)
                         val active = all.filter {

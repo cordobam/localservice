@@ -1,14 +1,18 @@
 package com.example.localservice.ui.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.localservice.data.remote.firebase.StorageSource
 import com.example.localservice.domain.model.Provider
 import com.example.localservice.domain.model.ServiceCategory
 import com.example.localservice.domain.repository.ProviderRepository
 import com.example.localservice.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class ProviderProfileUiState(
@@ -20,16 +24,18 @@ data class ProviderProfileUiState(
     val priceFrom: String = "",
     val category: ServiceCategory = ServiceCategory.OTHER,
     val isAvailable: Boolean = true,
+    val photoUrl: String = "",
+    val photoUri: Uri? = null,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null,
-
     val mpAlias: String = ""
 )
 
 @HiltViewModel
 class ProviderProfileViewModel @Inject constructor(
-    private val providerRepository: ProviderRepository
+    private val providerRepository: ProviderRepository,
+    private val storageSource: StorageSource
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProviderProfileUiState())
@@ -53,6 +59,7 @@ class ProviderProfileViewModel @Inject constructor(
                             priceFrom   = if (p.priceFrom > 0) p.priceFrom.toString() else "",
                             category    = p.category,
                             isAvailable = p.isAvailable,
+                            photoUrl    = p.photoUrl,
                             mpAlias     = p.mpAlias
                         )
                     }
@@ -68,6 +75,7 @@ class ProviderProfileViewModel @Inject constructor(
     fun onCityChanged(v: String)        = _uiState.update { it.copy(city = v) }
     fun onPriceFromChanged(v: String)   { if (v.all { it.isDigit() }) _uiState.update { s -> s.copy(priceFrom = v) } }
     fun onAvailabilityChanged(v: Boolean) = _uiState.update { it.copy(isAvailable = v) }
+    fun onPhotoSelected(uri: Uri) = _uiState.update { it.copy(photoUri = uri) }
 
     fun saveProfile(providerUid: String) {
         val state = _uiState.value
@@ -75,18 +83,36 @@ class ProviderProfileViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
+
+            var photoUrl = state.photoUrl
+            state.photoUri?.let { uri ->
+                when (val uploadResult = withContext(Dispatchers.IO) {
+                    storageSource.uploadProfilePhoto(providerUid, uri)
+                }) {
+                    is Result.Success -> photoUrl = uploadResult.data
+                    is Result.Error -> {
+                        _uiState.update { it.copy(isSaving = false, error = uploadResult.message) }
+                        return@launch
+                    }
+                    else -> Unit
+                }
+            }
+
             val updated = base.copy(
                 description = state.description.trim(),
                 zone        = state.zone.trim(),
                 city        = state.city.trim(),
                 priceFrom   = state.priceFrom.toIntOrNull() ?: 0,
                 isAvailable = state.isAvailable,
-                mpAlias = state.mpAlias.trim()
+                photoUrl    = photoUrl,
+                mpAlias     = state.mpAlias.trim()
             )
             when (val result = providerRepository.updateProviderProfile(updated)) {
                 is Result.Success -> {
                     originalProvider = updated
-                    _uiState.update { it.copy(isSaving = false, isSaved = true) }
+                    _uiState.update {
+                        it.copy(isSaving = false, isSaved = true, photoUrl = photoUrl, photoUri = null)
+                    }
                 }
                 is Result.Error -> _uiState.update { it.copy(isSaving = false, error = result.message) }
                 else -> Unit

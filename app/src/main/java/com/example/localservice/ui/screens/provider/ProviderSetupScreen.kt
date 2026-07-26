@@ -1,17 +1,26 @@
 package com.example.localservice.ui.screens.provider
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.localservice.domain.model.ServiceCategory
 import com.example.localservice.ui.viewmodel.AuthViewModel
 import com.example.localservice.ui.viewmodel.ProviderSetupViewModel
@@ -151,6 +160,14 @@ fun ProviderSetupScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // --- Foto de perfil ---
+        PhotoPickerSection(
+            photoUri = uiState.photoUri,
+            onPhotoSelected = viewModel::onPhotoSelected
+        )
+
         // Error
         uiState.error?.let { error ->
             Spacer(modifier = Modifier.height(8.dp))
@@ -184,6 +201,57 @@ fun ProviderSetupScreen(
                 Text("Guardar y empezar", style = MaterialTheme.typography.titleMedium)
             }
         }
+    }
+}
+
+@Composable
+internal fun PhotoPickerSection(
+    photoUri: Uri?,
+    onPhotoSelected: (Uri) -> Unit,
+    currentPhotoUrl: String = ""
+) {
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { onPhotoSelected(it) }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            "Foto de perfil",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable { launcher.launch("image/*") },
+            contentAlignment = Alignment.Center
+        ) {
+            when {
+                photoUri != null -> AsyncImage(
+                    model = photoUri,
+                    contentDescription = "Foto seleccionada",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                currentPhotoUrl.isNotEmpty() -> AsyncImage(
+                    model = currentPhotoUrl,
+                    contentDescription = "Foto actual",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                else -> Text("+", style = MaterialTheme.typography.headlineLarge)
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "Presioná para cambiar",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
