@@ -1,17 +1,21 @@
 package com.example.localservice.ui.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.localservice.data.remote.firebase.StorageSource
 import com.example.localservice.domain.model.Provider
 import com.example.localservice.domain.model.ServiceCategory
 import com.example.localservice.domain.repository.ProviderRepository
 import com.example.localservice.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class ProviderSetupUiState(
@@ -20,14 +24,17 @@ data class ProviderSetupUiState(
     val zone: String = "",
     val city: String = "",
     val priceFrom: String = "",
+    val photoUri: Uri? = null,
+    val photoUrl: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isComplete: Boolean = false    // true cuando el perfil se guardó OK
+    val isComplete: Boolean = false
 )
 
 @HiltViewModel
 class ProviderSetupViewModel @Inject constructor(
-    private val providerRepository: ProviderRepository
+    private val providerRepository: ProviderRepository,
+    private val storageSource: StorageSource
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProviderSetupUiState())
@@ -55,6 +62,10 @@ class ProviderSetupViewModel @Inject constructor(
         }
     }
 
+    fun onPhotoSelected(uri: Uri) {
+        _uiState.update { it.copy(photoUri = uri) }
+    }
+
     val isFormValid: Boolean
         get() = _uiState.value.selectedCategory != null &&
                 _uiState.value.zone.isNotBlank() &&
@@ -67,10 +78,25 @@ class ProviderSetupViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
+            var photoUrl = state.photoUrl
+            state.photoUri?.let { uri ->
+                when (val uploadResult = withContext(Dispatchers.IO) {
+                    storageSource.uploadProfilePhoto(uid, uri)
+                }) {
+                    is Result.Success -> photoUrl = uploadResult.data
+                    is Result.Error -> {
+                        _uiState.update { it.copy(isLoading = false, error = uploadResult.message) }
+                        return@launch
+                    }
+                    else -> Unit
+                }
+            }
+
             val provider = Provider(
                 uid         = uid,
                 name        = name,
                 category    = category,
+                photoUrl    = photoUrl,
                 description = state.description.trim(),
                 zone        = state.zone.trim(),
                 city        = state.city.trim(),

@@ -15,6 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.localservice.ui.viewmodel.AuthViewModel
 import com.example.localservice.ui.viewmodel.ProviderProfileViewModel
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProviderProfileScreen(
@@ -87,6 +88,12 @@ fun ProviderProfileScreen(
                 "${uiState.category.emoji} ${uiState.category.displayName}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            PhotoPickerSection(
+                photoUri = uiState.photoUri,
+                onPhotoSelected = viewModel::onPhotoSelected,
+                currentPhotoUrl = uiState.photoUrl
             )
 
             HorizontalDivider()

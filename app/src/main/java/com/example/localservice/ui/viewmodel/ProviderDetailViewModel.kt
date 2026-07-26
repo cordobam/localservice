@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.localservice.domain.model.Booking
+import com.example.localservice.domain.model.BookingStatus
 import com.example.localservice.domain.model.Provider
 import com.example.localservice.domain.model.Review
 import com.example.localservice.domain.repository.BookingRepository
@@ -81,6 +82,47 @@ class ProviderDetailViewModel @Inject constructor(
 
     fun hideRequestSheet() {
         _uiState.update { it.copy(showRequestSheet = false, requestDescription = "") }
+    }
+
+    // Solicitar presupuesto primero — status = BUDGET_REQUESTED
+    fun submitBudgetRequest(
+        clientUid: String,
+        clientName: String,
+        clientPhone: String
+    ) {
+        val provider = _uiState.value.provider ?: return
+        val description = _uiState.value.requestDescription.trim()
+        if (description.isBlank()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmitting = true) }
+
+            val booking = Booking(
+                providerUid  = provider.uid,
+                providerName = provider.name,
+                clientUid    = clientUid,
+                clientName   = clientName,
+                clientPhone  = clientPhone,
+                category     = provider.category,
+                description  = description,
+                status       = BookingStatus.BUDGET_REQUESTED
+            )
+
+            when (val result = bookingRepository.createBooking(booking)) {
+                is Result.Success -> _uiState.update {
+                    it.copy(
+                        isSubmitting  = false,
+                        showRequestSheet = false,
+                        bookingSuccess = true,
+                        bookingSlug   = result.data.publicSlug
+                    )
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(isSubmitting = false, error = result.message)
+                }
+                is Result.Loading -> Unit
+            }
+        }
     }
 
     // Solicitud directa — el cliente describe qué necesita

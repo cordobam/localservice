@@ -86,7 +86,7 @@ fun BookingCard(
             )
 
             // Acciones — solo para pedidos pendientes
-            if (showActions && booking.status == BookingStatus.PENDING) {
+            if (showActions && (booking.status == BookingStatus.PENDING || booking.status == BookingStatus.BUDGET_REQUESTED)) {
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(10.dp))
@@ -130,6 +130,7 @@ fun BookingCard(
 fun StatusChip(status: BookingStatus) {
     val (label, containerColor, contentColor) = when (status) {
         BookingStatus.PENDING         -> Triple("Pendiente",   MaterialTheme.colorScheme.errorContainer,     MaterialTheme.colorScheme.onErrorContainer)
+        BookingStatus.BUDGET_REQUESTED -> Triple("Ppto. solicit.", MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer)
         BookingStatus.BUDGET_SENT     -> Triple("Presupuesto", MaterialTheme.colorScheme.tertiaryContainer,  MaterialTheme.colorScheme.onTertiaryContainer)
         BookingStatus.BUDGET_APPROVED -> Triple("Aprobado",    MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
         BookingStatus.IN_PROGRESS     -> Triple("En curso",    MaterialTheme.colorScheme.primaryContainer,   MaterialTheme.colorScheme.onPrimaryContainer)

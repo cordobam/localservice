@@ -247,6 +247,8 @@ private fun StatusMessage(booking: Booking) {
     val (icon, message) = when (booking.status) {
         BookingStatus.PENDING ->
             "⏳" to "Tu pedido fue enviado. Esperando respuesta del prestador."
+        BookingStatus.BUDGET_REQUESTED ->
+            "📝" to "Solicitaste un presupuesto. Esperando que el prestador lo envíe."
         BookingStatus.BUDGET_SENT ->
             "💬" to "El prestador te mandó un presupuesto. Revisalo y decidí."
         BookingStatus.BUDGET_APPROVED ->

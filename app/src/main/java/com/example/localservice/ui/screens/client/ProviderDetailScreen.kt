@@ -65,9 +65,8 @@ fun ProviderDetailScreen(
                     )
                 },
                 onSubmitBudgetRequest = {
-                    // Mismo flujo — el prestador decide si manda presupuesto o acepta directo
                     val user = authState.currentUser ?: return@RequestServiceSheet
-                    viewModel.submitDirectRequest(
+                    viewModel.submitBudgetRequest(
                         clientUid   = user.uid,
                         clientName  = user.name,
                         clientPhone = user.phone
