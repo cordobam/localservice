@@ -3,19 +3,16 @@ package com.example.localservice.ui.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.localservice.data.remote.firebase.StorageSource
 import com.example.localservice.domain.model.Provider
 import com.example.localservice.domain.model.ServiceCategory
 import com.example.localservice.domain.repository.ProviderRepository
 import com.example.localservice.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class ProviderSetupUiState(
@@ -33,8 +30,7 @@ data class ProviderSetupUiState(
 
 @HiltViewModel
 class ProviderSetupViewModel @Inject constructor(
-    private val providerRepository: ProviderRepository,
-    private val storageSource: StorageSource
+    private val providerRepository: ProviderRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProviderSetupUiState())
@@ -78,19 +74,7 @@ class ProviderSetupViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            var photoUrl = state.photoUrl
-            state.photoUri?.let { uri ->
-                when (val uploadResult = withContext(Dispatchers.IO) {
-                    storageSource.uploadProfilePhoto(uid, uri)
-                }) {
-                    is Result.Success -> photoUrl = uploadResult.data
-                    is Result.Error -> {
-                        _uiState.update { it.copy(isLoading = false, error = uploadResult.message) }
-                        return@launch
-                    }
-                    else -> Unit
-                }
-            }
+            val photoUrl = state.photoUri?.toString() ?: state.photoUrl
 
             val provider = Provider(
                 uid         = uid,

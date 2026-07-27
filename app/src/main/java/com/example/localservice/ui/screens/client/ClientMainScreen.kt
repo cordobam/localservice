@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Map
@@ -26,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.localservice.ui.screens.provider.PhotoPickerSection
 import com.example.localservice.ui.viewmodel.AuthViewModel
 import com.example.localservice.ui.viewmodel.MyBookingsViewModel
 
@@ -155,25 +158,78 @@ private fun ClientProfileScreen(
 ) {
     val authState by authViewModel.uiState.collectAsState()
     val user = authState.currentUser
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(Modifier.weight(1f))
-        Text(user?.name ?: "", style = MaterialTheme.typography.headlineSmall)
-        Text(
-            user?.email ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.weight(1f))
-        OutlinedButton(
-            onClick = onLogout,
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("Cerrar sesión") }
-        Spacer(Modifier.weight(0.5f))
+    LaunchedEffect(authState.photoUpdated) {
+        if (authState.photoUpdated) {
+            snackbarHostState.showSnackbar("Foto de perfil actualizada")
+            authViewModel.clearPhotoUpdated()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.weight(0.3f))
+
+            PhotoPickerSection(
+                photoUri = authState.photoUri,
+                onPhotoSelected = authViewModel::onPhotoSelected,
+                currentPhotoUrl = user?.photoUrl ?: ""
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Text(user?.name ?: "", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                user?.email ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            if (authState.photoUri != null) {
+                Button(
+                    onClick = { authViewModel.updateProfilePhoto() },
+                    enabled = !authState.isPhotoUpdating,
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    if (authState.isPhotoUpdating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Guardar foto")
+                    }
+                }
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            authState.error?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Cerrar sesión") }
+            Spacer(Modifier.weight(0.5f))
+        }
     }
 }

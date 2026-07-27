@@ -84,6 +84,17 @@ class AuthFirebaseSource @Inject constructor(
         }
     }
 
+    suspend fun updateUser(uid: String, data: Map<String, Any>): Result<Unit> {
+        return try {
+            firestore.collection("users").document(uid)
+                .update(data)
+                .await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error al actualizar usuario", e)
+        }
+    }
+
     fun logout() = auth.signOut()
 
     // Extensión privada para mapear User a Map para Firestore

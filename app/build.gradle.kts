@@ -72,7 +72,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.messaging)   // FCM — notificaciones push
-    implementation(libs.firebase.storage)     // Storage — fotos de perfil
+    // implementation(libs.firebase.storage)     // Storage — no habilitado
 
     // --- Coroutines ---
     implementation(libs.kotlinx.coroutines.android)

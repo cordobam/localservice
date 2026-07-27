@@ -1,5 +1,6 @@
 package com.example.localservice.ui.viewmodel
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,7 +27,10 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val currentUser: User? = null,
-    val isLoggedIn: Boolean = false
+    val isLoggedIn: Boolean = false,
+    val photoUri: Uri? = null,
+    val isPhotoUpdating: Boolean = false,
+    val photoUpdated: Boolean = false
 )
 
 // --- AuthViewModel ---
@@ -169,6 +173,38 @@ class AuthViewModel @Inject constructor(
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
+
+    fun onPhotoSelected(uri: Uri) {
+        _uiState.update { it.copy(photoUri = uri) }
+    }
+
+    fun updateProfilePhoto() {
+        val state = _uiState.value
+        val uri = state.photoUri ?: return
+        val user = state.currentUser ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPhotoUpdating = true, error = null) }
+            when (val result = authRepository.updateProfilePhoto(user.uid, uri.toString())) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isPhotoUpdating = false,
+                            photoUpdated = true,
+                            photoUri = null,
+                            currentUser = it.currentUser?.copy(photoUrl = uri.toString())
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isPhotoUpdating = false, error = result.message) }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    fun clearPhotoUpdated() = _uiState.update { it.copy(photoUpdated = false) }
 
     fun savePendingRegistration(
         name: String,
