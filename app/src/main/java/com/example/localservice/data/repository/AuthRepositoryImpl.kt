@@ -77,6 +77,17 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun isLoggedIn(): Boolean =
         source.currentFirebaseUser() != null
 
+    override suspend fun updateProfilePhoto(uid: String, photoUrl: String): Result<Unit> {
+        val result = source.updateUser(uid, mapOf("photoUrl" to photoUrl))
+        if (result is Result.Success) {
+            withContext(Dispatchers.IO) {
+                val cached = userDao.getUserById(uid)
+                cached?.let { userDao.upsert(it.copy(photoUrl = photoUrl)) }
+            }
+        }
+        return result
+    }
+
     private fun User.toEntity() = UserEntity(
         uid = uid,
         name = name,
