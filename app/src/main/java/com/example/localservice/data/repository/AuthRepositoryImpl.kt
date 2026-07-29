@@ -88,6 +88,21 @@ class AuthRepositoryImpl @Inject constructor(
         return result
     }
 
+    override suspend fun updateUserProfile(uid: String, name: String, phone: String): Result<Unit> {
+        val result = source.updateUser(uid, mapOf("name" to name, "phone" to phone))
+        if (result is Result.Success) {
+            withContext(Dispatchers.IO) {
+                val cached = userDao.getUserById(uid)
+                cached?.let { userDao.upsert(it.copy(name = name, phone = phone)) }
+            }
+        }
+        return result
+    }
+
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+        return source.updatePassword(newPassword)
+    }
+
     private fun User.toEntity() = UserEntity(
         uid = uid,
         name = name,
