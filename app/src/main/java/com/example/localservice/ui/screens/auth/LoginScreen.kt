@@ -35,6 +35,19 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    if (uiState.passwordResetSent) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPasswordResetSent() },
+            title = { Text("Correo enviado") },
+            text = { Text("Te enviamos un correo para restablecer tu contraseña. Revisá tu bandeja de entrada.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearPasswordResetSent() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,7 +73,7 @@ fun LoginScreen(
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { email = it; viewModel.clearError() },
             label = { Text("Correo electrónico") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
@@ -71,13 +84,22 @@ fun LoginScreen(
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { password = it; viewModel.clearError() },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        TextButton(
+            onClick = { viewModel.sendPasswordResetEmail(email) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("¿Olvidaste tu contraseña?", style = MaterialTheme.typography.bodySmall)
+        }
 
         // Muestra el error si existe
         uiState.error?.let { error ->
@@ -87,7 +109,6 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )
-            LaunchedEffect(error) { viewModel.clearError() }
         }
 
         Spacer(modifier = Modifier.height(24.dp))

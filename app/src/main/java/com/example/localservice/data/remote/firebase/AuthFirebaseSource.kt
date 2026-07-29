@@ -105,6 +105,15 @@ class AuthFirebaseSource @Inject constructor(
         }
     }
 
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error al enviar correo de recuperación", e)
+        }
+    }
+
     fun logout() = auth.signOut()
 
     // Extensión privada para mapear User a Map para Firestore

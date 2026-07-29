@@ -30,7 +30,8 @@ data class AuthUiState(
     val isLoggedIn: Boolean = false,
     val photoUri: Uri? = null,
     val isPhotoUpdating: Boolean = false,
-    val photoUpdated: Boolean = false
+    val photoUpdated: Boolean = false,
+    val passwordResetSent: Boolean = false
 )
 
 // --- AuthViewModel ---
@@ -205,6 +206,28 @@ class AuthViewModel @Inject constructor(
     }
 
     fun clearPhotoUpdated() = _uiState.update { it.copy(photoUpdated = false) }
+
+    fun sendPasswordResetEmail(email: String) {
+        if (!email.isValidEmail()) {
+            _uiState.update { it.copy(error = "Ingresá un correo válido") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            when (val result = authRepository.sendPasswordResetEmail(email)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isLoading = false, passwordResetSent = true) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    fun clearPasswordResetSent() = _uiState.update { it.copy(passwordResetSent = false) }
 
     fun savePendingRegistration(
         name: String,
