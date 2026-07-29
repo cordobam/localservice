@@ -103,6 +103,10 @@ class AuthRepositoryImpl @Inject constructor(
         return source.updatePassword(newPassword)
     }
 
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return source.sendPasswordResetEmail(email)
+    }
+
     private fun User.toEntity() = UserEntity(
         uid = uid,
         name = name,
