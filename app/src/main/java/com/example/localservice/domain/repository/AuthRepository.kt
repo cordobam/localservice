@@ -25,4 +25,8 @@ interface AuthRepository {
     suspend fun isLoggedIn(): Boolean
 
     suspend fun updateProfilePhoto(uid: String, photoUrl: String): Result<Unit>
+
+    suspend fun updateUserProfile(uid: String, name: String, phone: String): Result<Unit>
+
+    suspend fun updatePassword(newPassword: String): Result<Unit>
 }

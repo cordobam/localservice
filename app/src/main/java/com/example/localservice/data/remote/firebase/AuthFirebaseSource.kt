@@ -95,6 +95,16 @@ class AuthFirebaseSource @Inject constructor(
         }
     }
 
+    suspend fun updatePassword(newPassword: String): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: return Result.Error("No hay sesión activa")
+            user.updatePassword(newPassword).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error al cambiar contraseña", e)
+        }
+    }
+
     fun logout() = auth.signOut()
 
     // Extensión privada para mapear User a Map para Firestore

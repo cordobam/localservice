@@ -30,6 +30,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.localservice.ui.screens.provider.PhotoPickerSection
 import com.example.localservice.ui.viewmodel.AuthViewModel
+import com.example.localservice.ui.viewmodel.ClientProfileViewModel
 import com.example.localservice.ui.viewmodel.MyBookingsViewModel
 
 private sealed class ClientTab(
@@ -142,9 +143,11 @@ fun ClientMainScreen(
             }
 
             composable(ClientTab.Profile.route) {
+                val clientProfileViewModel: ClientProfileViewModel = hiltViewModel(viewModelStoreOwner = activity)
                 ClientProfileScreen(
                     onLogout = onLogout,
-                    authViewModel = authViewModel
+                    authViewModel = authViewModel,
+                    clientProfileViewModel = clientProfileViewModel
                 )
             }
         }
@@ -154,17 +157,74 @@ fun ClientMainScreen(
 @Composable
 private fun ClientProfileScreen(
     onLogout: () -> Unit,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    clientProfileViewModel: ClientProfileViewModel
 ) {
     val authState by authViewModel.uiState.collectAsState()
+    val profileState by clientProfileViewModel.uiState.collectAsState()
     val user = authState.currentUser
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(user) {
+        user?.let { clientProfileViewModel.init(it.name, it.phone) }
+    }
 
     LaunchedEffect(authState.photoUpdated) {
         if (authState.photoUpdated) {
             snackbarHostState.showSnackbar("Foto de perfil actualizada")
             authViewModel.clearPhotoUpdated()
         }
+    }
+
+    LaunchedEffect(profileState.isSaved) {
+        if (profileState.isSaved) {
+            snackbarHostState.showSnackbar("Perfil actualizado")
+            clientProfileViewModel.clearSaved()
+        }
+    }
+
+    LaunchedEffect(profileState.passwordChanged) {
+        if (profileState.passwordChanged) {
+            snackbarHostState.showSnackbar("Contraseña cambiada")
+            clientProfileViewModel.clearPasswordChanged()
+        }
+    }
+
+    if (profileState.showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { clientProfileViewModel.dismissPasswordDialog() },
+            title = { Text("Cambiar contraseña") },
+            text = {
+                OutlinedTextField(
+                    value = profileState.newPassword,
+                    onValueChange = clientProfileViewModel::onNewPasswordChanged,
+                    label = { Text("Nueva contraseña") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { clientProfileViewModel.changePassword() },
+                    enabled = !profileState.isChangingPassword
+                ) {
+                    if (profileState.isChangingPassword) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Cambiar")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { clientProfileViewModel.dismissPasswordDialog() }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -177,7 +237,7 @@ private fun ClientProfileScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.weight(0.3f))
+            Spacer(Modifier.height(8.dp))
 
             PhotoPickerSection(
                 photoUri = authState.photoUri,
@@ -187,11 +247,30 @@ private fun ClientProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Text(user?.name ?: "", style = MaterialTheme.typography.headlineSmall)
             Text(
                 user?.email ?: "",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = profileState.name,
+                onValueChange = clientProfileViewModel::onNameChanged,
+                label = { Text("Nombre") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = profileState.phone,
+                onValueChange = clientProfileViewModel::onPhoneChanged,
+                label = { Text("Teléfono") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(16.dp))
@@ -212,11 +291,36 @@ private fun ClientProfileScreen(
                         Text("Guardar foto")
                     }
                 }
+
+                Spacer(Modifier.height(12.dp))
             }
 
-            Spacer(Modifier.weight(1f))
+            Button(
+                onClick = { clientProfileViewModel.saveProfile(user?.uid ?: "") },
+                enabled = !profileState.isSaving,
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                if (profileState.isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Guardar cambios")
+                }
+            }
 
-            authState.error?.let { error ->
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = { clientProfileViewModel.showPasswordDialog() },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Cambiar contraseña") }
+
+            Spacer(Modifier.height(8.dp))
+
+            profileState.error?.let { error ->
                 Text(
                     text = error,
                     color = MaterialTheme.colorScheme.error,
@@ -225,11 +329,13 @@ private fun ClientProfileScreen(
                 Spacer(Modifier.height(8.dp))
             }
 
+            Spacer(Modifier.weight(1f))
+
             OutlinedButton(
                 onClick = onLogout,
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Cerrar sesión") }
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(0.2f))
         }
     }
 }
