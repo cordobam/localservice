@@ -13,28 +13,33 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val PAGE_SIZE = 20
+
 data class SearchUiState(
     val isLoading: Boolean = false,
     val providers: List<Provider> = emptyList(),
     val error: String? = null,
     val selectedCategory: ServiceCategory? = null,
-    val selectedZone: String? = null,
     val searchQuery: String = "",
     // Ubicación del usuario (null si no dio permiso)
     val userLat: Double? = null,
-    val userLng: Double? = null
+    val userLng: Double? = null,
+    // Paginación cliente
+    val visibleCount: Int = PAGE_SIZE
 ) {
     // Filtro activo derivado del estado — no hay que calcularlo en la UI
     val activeFilter: SearchFilter
         get() = SearchFilter(
             category  = selectedCategory,
-            zone      = selectedZone.takeIf { !it.isNullOrBlank() },
+            query     = searchQuery,
             userLat   = userLat,
             userLng   = userLng
         )
 
     val hasResults: Boolean get() = providers.isNotEmpty()
     val isEmpty: Boolean get() = !isLoading && providers.isEmpty() && error == null
+    val hasMore: Boolean get() = visibleCount < providers.size
+    val visibleProviders: List<Provider> get() = providers.take(visibleCount)
 }
 
 @OptIn(FlowPreview::class)
@@ -76,12 +81,12 @@ class SearchViewModel @Inject constructor(
     }
 
     fun onCategorySelected(category: ServiceCategory?) {
-        _uiState.update { it.copy(selectedCategory = category) }
+        _uiState.update { it.copy(selectedCategory = category, visibleCount = PAGE_SIZE) }
         _filterFlow.value = _uiState.value.activeFilter
     }
 
-    fun onZoneChanged(zone: String) {
-        _uiState.update { it.copy(selectedZone = zone) }
+    fun onQueryChanged(query: String) {
+        _uiState.update { it.copy(searchQuery = query, visibleCount = PAGE_SIZE) }
         _filterFlow.value = _uiState.value.activeFilter
     }
 
@@ -92,9 +97,13 @@ class SearchViewModel @Inject constructor(
 
     fun clearFilters() {
         _uiState.update {
-            it.copy(selectedCategory = null, selectedZone = null)
+            it.copy(selectedCategory = null, searchQuery = "", visibleCount = PAGE_SIZE)
         }
         _filterFlow.value = SearchFilter(userLat = _uiState.value.userLat, userLng = _uiState.value.userLng)
+    }
+
+    fun loadMore() {
+        _uiState.update { it.copy(visibleCount = it.visibleCount + PAGE_SIZE) }
     }
 
     fun clearError() {

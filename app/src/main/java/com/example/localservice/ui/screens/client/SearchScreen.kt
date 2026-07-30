@@ -76,21 +76,14 @@ fun SearchScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            var zoneText by remember { mutableStateOf("") }
             OutlinedTextField(
-                value = zoneText,
-                onValueChange = {
-                    zoneText = it
-                    viewModel.onZoneChanged(it)
-                },
-                placeholder = { Text("Buscar por barrio o zona...") },
+                value = uiState.searchQuery,
+                onValueChange = { viewModel.onQueryChanged(it) },
+                placeholder = { Text("Buscá un prestador, servicio o zona...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
-                    if (zoneText.isNotEmpty()) {
-                        IconButton(onClick = {
-                            zoneText = ""
-                            viewModel.onZoneChanged("")
-                        }) {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onQueryChanged("") }) {
                             Icon(Icons.Default.Clear, contentDescription = "Limpiar")
                         }
                     }
@@ -178,11 +171,23 @@ fun SearchScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(items = uiState.providers, key = { it.uid }) { provider ->
+                        items(items = uiState.visibleProviders, key = { it.uid }) { provider ->
                             ProviderCard(
                                 provider = provider,
                                 onClick = { onNavigateToProviderDetail(provider.uid) }
                             )
+                        }
+                        if (uiState.hasMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    OutlinedButton(onClick = { viewModel.loadMore() }) {
+                                        Text("Ver más (${uiState.providers.size - uiState.visibleCount} restantes)")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
