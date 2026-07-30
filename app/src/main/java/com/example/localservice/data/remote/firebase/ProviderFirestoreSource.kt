@@ -31,7 +31,7 @@ class ProviderFirestoreSource @Inject constructor(
             var query: Query = collection
                 .whereEqualTo("isAvailable", true)
                 .orderBy("rating", Query.Direction.DESCENDING)
-                .limit(50)
+                .limit(20)
 
             // Filtro por categoría en Firestore
             filter.category?.let { category ->
@@ -53,6 +53,17 @@ class ProviderFirestoreSource @Inject constructor(
                 filter.zone?.let { zone ->
                     providers = providers.filter {
                         it.zone.contains(zone, ignoreCase = true)
+                    }
+                }
+
+                // Filtro por texto libre en memoria (nombre, descripción, zona, ciudad)
+                if (filter.query.isNotBlank()) {
+                    val lower = filter.query.lowercase()
+                    providers = providers.filter {
+                        it.name.lowercase().contains(lower) ||
+                        it.description.lowercase().contains(lower) ||
+                        it.zone.lowercase().contains(lower) ||
+                        it.city.lowercase().contains(lower)
                     }
                 }
 
