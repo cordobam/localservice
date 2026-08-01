@@ -6,5 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface ReviewRepository {
     fun getReviewsForProvider(providerUid: String): Flow<Result<List<Review>>>
-    suspend fun addReview(review: Review): Result<Unit>
+    fun getReviewsByClient(clientUid: String): Flow<Result<List<Review>>>
+    suspend fun getReviewById(reviewId: String): Result<Review?>
+    suspend fun addReview(review: Review): Result<Review>
+    suspend fun updateReview(review: Review): Result<Unit>
+    suspend fun deleteReview(reviewId: String): Result<Unit>
 }

@@ -1,5 +1,6 @@
 package com.example.localservice.ui.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -8,10 +9,12 @@ import com.example.localservice.domain.model.User
 import com.example.localservice.domain.model.UserRole
 import com.example.localservice.util.Result
 import com.example.localservice.domain.repository.AuthRepository
+import com.example.localservice.util.copyImageToInternalStorage
 import com.example.localservice.util.isValidEmail
 import com.example.localservice.util.isValidPassword
 import com.example.localservice.util.toFriendlyError
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +40,7 @@ data class AuthUiState(
 // --- AuthViewModel ---
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
@@ -186,14 +190,23 @@ class AuthViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isPhotoUpdating = true, error = null) }
-            when (val result = authRepository.updateProfilePhoto(user.uid, uri.toString())) {
+
+            val photoUrl = copyImageToInternalStorage(context, uri, "client_${user.uid}")
+            if (photoUrl == null) {
+                _uiState.update {
+                    it.copy(isPhotoUpdating = false, error = "No se pudo guardar la foto")
+                }
+                return@launch
+            }
+
+            when (val result = authRepository.updateProfilePhoto(user.uid, photoUrl)) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(
                             isPhotoUpdating = false,
                             photoUpdated = true,
                             photoUri = null,
-                            currentUser = it.currentUser?.copy(photoUrl = uri.toString())
+                            currentUser = it.currentUser?.copy(photoUrl = photoUrl)
                         )
                     }
                 }

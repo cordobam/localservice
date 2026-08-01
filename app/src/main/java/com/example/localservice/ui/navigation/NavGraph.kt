@@ -112,8 +112,8 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                 onNavigateToChat = { bookingId, providerName ->
                     navController.navigate(Screen.Chat.createRoute(bookingId, providerName))
                 },
-                onNavigateToReview = { providerUid, providerName ->
-                    navController.navigate(Screen.Review.createRoute(providerUid, providerName))
+                onNavigateToReview = { providerUid, providerName, bookingId, reviewId ->
+                    navController.navigate(Screen.Review.createRoute(providerUid, providerName, bookingId, reviewId))
                 },
                 authViewModel = authViewModel
             )
@@ -202,17 +202,23 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         composable(
-            route = "review/{providerUid}/{providerName}",
+            route = "review/{providerUid}/{providerName}/{bookingId}?reviewId={reviewId}",
             arguments = listOf(
                 navArgument("providerUid") { type = NavType.StringType },
-                navArgument("providerName") { type = NavType.StringType }
+                navArgument("providerName") { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
+                navArgument("reviewId") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStack ->
             val providerUid = backStack.arguments?.getString("providerUid") ?: ""
             val providerName = backStack.arguments?.getString("providerName") ?: ""
+            val bookingId = backStack.arguments?.getString("bookingId") ?: ""
+            val reviewId = backStack.arguments?.getString("reviewId") ?: ""
             ReviewScreen(
                 providerUid = providerUid,
                 providerName = providerName,
+                bookingId = bookingId,
+                reviewId = reviewId,
                 onBack = { navController.popBackStack() },
                 onSubmitted = { navController.popBackStack() },
                 authViewModel = authViewModel

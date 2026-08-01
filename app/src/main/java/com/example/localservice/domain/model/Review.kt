@@ -8,5 +8,6 @@ data class Review(
     val clientPhotoUrl: String = "",
     val rating: Float = 0f,
     val comment: String = "",
+    val bookingId: String = "",
     val createdAt: Long = 0L
 )

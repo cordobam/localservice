@@ -22,7 +22,7 @@ import com.example.localservice.data.local.entity.UserEntity
         ReviewEntity::class,
         ChatMessageEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

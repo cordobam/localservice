@@ -21,6 +21,8 @@ import com.example.localservice.ui.viewmodel.ReviewViewModel
 fun ReviewScreen(
     providerUid: String,
     providerName: String,
+    bookingId: String,
+    reviewId: String = "",
     onBack: () -> Unit,
     onSubmitted: () -> Unit,
     authViewModel: AuthViewModel,
@@ -34,10 +36,16 @@ fun ReviewScreen(
         if (uiState.isSubmitted) onSubmitted()
     }
 
+    LaunchedEffect(reviewId) {
+        if (reviewId.isNotBlank()) viewModel.initForEditById(reviewId)
+    }
+
+    val isEditing = uiState.editingReviewId != null
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Calificar servicio") },
+                title = { Text(if (isEditing) "Editar reseña" else "Calificar servicio") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -46,6 +54,18 @@ fun ReviewScreen(
             )
         }
     ) { padding ->
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -58,13 +78,15 @@ fun ReviewScreen(
             Text("🎉", style = MaterialTheme.typography.displayMedium)
             Spacer(Modifier.height(12.dp))
             Text(
-                "¿Cómo te fue con $providerName?",
+                if (isEditing) "Actualizá tu reseña sobre $providerName"
+                else "¿Cómo te fue con $providerName?",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
             Text(
-                "Tu opinión ayuda a otros vecinos a elegir mejor.",
+                if (isEditing) "Tu opinión ayuda a otros vecinos a elegir mejor."
+                else "Tu opinión ayuda a otros vecinos a elegir mejor.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -136,7 +158,8 @@ fun ReviewScreen(
                         viewModel.submitReview(
                             providerUid = providerUid,
                             clientUid   = it.uid,
-                            clientName  = it.name
+                            clientName  = it.name,
+                            bookingId   = bookingId
                         )
                     }
                 },
@@ -144,13 +167,16 @@ fun ReviewScreen(
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 if (uiState.isSubmitting) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                else Text("Enviar calificación", style = MaterialTheme.typography.titleMedium)
+                else Text(
+                    if (isEditing) "Guardar cambios" else "Enviar calificación",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
 
             Spacer(Modifier.height(12.dp))
 
             TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-                Text("Ahora no")
+                Text(if (isEditing) "Cancelar" else "Ahora no")
             }
         }
     }

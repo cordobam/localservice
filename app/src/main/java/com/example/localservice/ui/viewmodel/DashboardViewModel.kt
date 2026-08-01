@@ -63,8 +63,7 @@ class DashboardViewModel @Inject constructor(
 
 
     fun init(providerUid: String, providerName: String) {
-        // SACÁ esta línea:
-        // if (_uiState.value.providerUid == providerUid) return
+        if (_uiState.value.providerUid == providerUid) return
 
         _uiState.update { it.copy(providerUid = providerUid, providerName = providerName) }
         observeBookings(providerUid)

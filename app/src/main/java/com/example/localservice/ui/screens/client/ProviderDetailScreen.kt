@@ -1,6 +1,5 @@
 package com.example.localservice.ui.screens.client
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -9,8 +8,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +26,7 @@ import coil.compose.AsyncImage
 import com.example.localservice.domain.model.Review
 import com.example.localservice.ui.viewmodel.AuthViewModel
 import com.example.localservice.ui.viewmodel.ProviderDetailViewModel
+import com.example.localservice.ui.viewmodel.ReviewViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +38,8 @@ fun ProviderDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val authState by authViewModel.uiState.collectAsState()
+    val reviewViewModel: ReviewViewModel = hiltViewModel()
+    val reviewState by reviewViewModel.uiState.collectAsState()
 
     // Cuando se crea un booking exitoso, navegamos al tracking
     LaunchedEffect(uiState.bookingSuccess) {
@@ -77,7 +82,114 @@ fun ProviderDetailScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(reviewState.isDeleted) {
+        if (reviewState.isDeleted) {
+            snackbarHostState.showSnackbar("Reseña eliminada")
+        }
+    }
+
+    // Diálogo de edición de reseña
+    var reviewToEdit by remember { mutableStateOf<Review?>(null) }
+    if (reviewToEdit != null) {
+        val review = reviewToEdit!!
+        LaunchedEffect(review) { reviewViewModel.initForEdit(review) }
+        LaunchedEffect(reviewState.isSubmitted) {
+            if (reviewState.isSubmitted) {
+                reviewToEdit = null
+                snackbarHostState.showSnackbar("Reseña actualizada")
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { reviewToEdit = null },
+            title = { Text("Editar reseña") },
+            text = {
+                Column {
+                    Text("Calificación", style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        (1..5).forEach { star ->
+                            IconButton(
+                                onClick = { reviewViewModel.onRatingChanged(star) },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (star <= reviewState.rating) Icons.Filled.Star else Icons.Outlined.Star,
+                                    contentDescription = "$star estrellas",
+                                    tint = if (star <= reviewState.rating) MaterialTheme.colorScheme.secondary
+                                           else MaterialTheme.colorScheme.outlineVariant,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = reviewState.comment,
+                        onValueChange = reviewViewModel::onCommentChanged,
+                        label = { Text("Comentario") },
+                        minLines = 2,
+                        maxLines = 4,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    reviewState.error?.let { error ->
+                        Spacer(Modifier.height(4.dp))
+                        Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        authState.currentUser?.let { user ->
+                            reviewViewModel.submitReview(
+                                providerUid = uiState.provider?.uid ?: "",
+                                clientUid = user.uid,
+                                clientName = user.name,
+                                bookingId = review.bookingId
+                            )
+                        }
+                    },
+                    enabled = reviewState.rating > 0 && !reviewState.isSubmitting
+                ) {
+                    if (reviewState.isSubmitting) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Guardar")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reviewToEdit = null }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // Diálogo de confirmación de eliminación
+    var reviewToDelete by remember { mutableStateOf<String?>(null) }
+    if (reviewToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { reviewToDelete = null },
+            title = { Text("Eliminar reseña") },
+            text = { Text("¿Estás seguro de que querés eliminar tu reseña? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        reviewViewModel.deleteReview(reviewToDelete!!)
+                        reviewToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(contentColor = MaterialTheme.colorScheme.onError,
+                        containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { reviewToDelete = null }) { Text("Cancelar") }
+            }
+        )
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(uiState.provider?.name ?: "") },
@@ -299,7 +411,12 @@ fun ProviderDetailScreen(
                         }
                     } else {
                         items(uiState.reviews) { review ->
-                            ReviewItem(review = review)
+                            ReviewItem(
+                                review = review,
+                                isOwnReview = review.clientUid == authState.currentUser?.uid,
+                                onEdit = { reviewToEdit = review },
+                                onDelete = { reviewToDelete = review.id }
+                            )
                         }
                     }
 
@@ -313,7 +430,12 @@ fun ProviderDetailScreen(
 
 // --- Componente de reseña individual ---
 @Composable
-private fun ReviewItem(review: Review) {
+private fun ReviewItem(
+    review: Review,
+    isOwnReview: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     Column(
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
@@ -333,7 +455,7 @@ private fun ReviewItem(review: Review) {
                 }
             }
             Spacer(modifier = Modifier.width(10.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(review.clientName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                 // Estrellas
                 Row {
@@ -345,6 +467,17 @@ private fun ReviewItem(review: Review) {
                             tint = if (index < review.rating) MaterialTheme.colorScheme.secondary
                                    else MaterialTheme.colorScheme.outlineVariant
                         )
+                    }
+                }
+            }
+            if (isOwnReview) {
+                Row {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }

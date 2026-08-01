@@ -1,5 +1,6 @@
 package com.example.localservice.ui.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,7 +8,9 @@ import com.example.localservice.domain.model.Provider
 import com.example.localservice.domain.model.ServiceCategory
 import com.example.localservice.domain.repository.ProviderRepository
 import com.example.localservice.util.Result
+import com.example.localservice.util.copyImageToInternalStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +33,7 @@ data class ProviderSetupUiState(
 
 @HiltViewModel
 class ProviderSetupViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val providerRepository: ProviderRepository
 ) : ViewModel() {
 
@@ -74,7 +78,9 @@ class ProviderSetupViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val photoUrl = state.photoUri?.toString() ?: state.photoUrl
+            val photoUrl = state.photoUri
+                ?.let { copyImageToInternalStorage(context, it, "provider_$uid") }
+                ?: state.photoUrl
 
             val provider = Provider(
                 uid         = uid,

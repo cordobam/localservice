@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.localservice.domain.model.Booking
 import com.example.localservice.domain.model.BookingStatus
+import com.example.localservice.domain.model.Review
 import com.example.localservice.ui.components.BookingCard
 import com.example.localservice.ui.components.StatusChip
 import com.example.localservice.ui.viewmodel.AuthViewModel
@@ -26,7 +27,7 @@ fun MyBookingsScreen(
     onBack: () -> Unit,
     onNavigateToTracking: (String) -> Unit,
     onNavigateToChat: (String, String) -> Unit,
-    onNavigateToReview: (String, String) -> Unit,
+    onNavigateToReview: (String, String, String, String?) -> Unit,
     authViewModel: AuthViewModel,
     viewModel: MyBookingsViewModel
 ) {
@@ -105,7 +106,10 @@ fun MyBookingsScreen(
                                 onRejectBudget = { viewModel.rejectBudget(booking.id) },
                                 onTrack = { onNavigateToTracking(booking.publicSlug) },
                                 onChat = { onNavigateToChat(booking.id, booking.providerName) },
-                                onReview = { onNavigateToReview(booking.providerUid, booking.providerName) },
+                                review = uiState.reviewsByBooking[booking.id],
+                                onReview = { reviewId ->
+                                    onNavigateToReview(booking.providerUid, booking.providerName, booking.id, reviewId)
+                                },
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                             )
                         }
@@ -130,7 +134,10 @@ fun MyBookingsScreen(
                                 onRejectBudget = {},
                                 onTrack = {},
                                 onChat = { onNavigateToChat(booking.id, booking.providerName) },
-                                onReview = { onNavigateToReview(booking.providerUid, booking.providerName) },
+                                review = uiState.reviewsByBooking[booking.id],
+                                onReview = { reviewId ->
+                                    onNavigateToReview(booking.providerUid, booking.providerName, booking.id, reviewId)
+                                },
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                             )
                         }
@@ -149,7 +156,8 @@ private fun ClientBookingCard(
     onRejectBudget: () -> Unit,
     onTrack: () -> Unit,
     onChat: () -> Unit = {},
-    onReview: () -> Unit = {},
+    review: Review? = null,
+    onReview: (String?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -230,9 +238,9 @@ private fun ClientBookingCard(
                 BookingStatus.COMPLETED -> {
                     Spacer(modifier = Modifier.height(10.dp))
                     Button(
-                        onClick = onReview,
+                        onClick = { onReview(review?.id) },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Calificar servicio") }
+                    ) { Text(if (review != null) "Editar reseña" else "Calificar servicio") }
                 }
 
                 else -> Unit

@@ -12,5 +12,6 @@ data class ReviewEntity(
     val clientPhotoUrl: String,
     val rating: Float,
     val comment: String,
+    val bookingId: String,
     val createdAt: Long
 )

@@ -58,7 +58,7 @@ fun ClientMainScreen(
     onNavigateToProviderDetail: (String) -> Unit,
     onNavigateToTracking: (String) -> Unit,
     onNavigateToChat: (String, String) -> Unit,
-    onNavigateToReview: (String, String) -> Unit,
+    onNavigateToReview: (String, String, String, String?) -> Unit,
     authViewModel: AuthViewModel
 ) {
     val tabNavController = rememberNavController()
