@@ -32,6 +32,7 @@ class ReviewRepositoryImpl @Inject constructor(
                 source.getReviewsForProvider(providerUid).collect { result ->
                     if (result is Result.Success) {
                         withContext(Dispatchers.IO) {
+                            reviewDao.deleteByProviderUid(providerUid)
                             reviewDao.upsertAll(result.data.map { it.toEntity() })
                         }
                     }
@@ -41,10 +42,60 @@ class ReviewRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addReview(review: Review): Result<Unit> {
+    override fun getReviewsByClient(clientUid: String): Flow<Result<List<Review>>> = flow {
+        val roomFlow = reviewDao.getReviewsByClient(clientUid).map { entities ->
+            Result.Success(entities.map { it.toDomain() }) as Result<List<Review>>
+        }
+        coroutineScope {
+            launch {
+                source.getReviewsByClient(clientUid).collect { result ->
+                    if (result is Result.Success) {
+                        withContext(Dispatchers.IO) {
+                            reviewDao.deleteByClientUid(clientUid)
+                            reviewDao.upsertAll(result.data.map { it.toEntity() })
+                        }
+                    }
+                }
+            }
+            emitAll(roomFlow)
+        }
+    }
+
+    override suspend fun getReviewById(reviewId: String): Result<Review?> {
+        val remote = source.getReviewById(reviewId)
+        if (remote is Result.Success) {
+            remote.data?.let {
+                withContext(Dispatchers.IO) { reviewDao.upsert(it.toEntity()) }
+            }
+            return remote
+        }
+        val cached = withContext(Dispatchers.IO) { reviewDao.getReviewById(reviewId) }
+        return if (cached != null) Result.Success(cached.toDomain())
+        else remote
+    }
+
+    override suspend fun addReview(review: Review): Result<Review> {
         val result = source.addReview(review)
         if (result is Result.Success) {
+            result.data?.let {
+                withContext(Dispatchers.IO) { reviewDao.upsert(it.toEntity()) }
+            }
+        }
+        return result
+    }
+
+    override suspend fun updateReview(review: Review): Result<Unit> {
+        val result = source.updateReview(review)
+        if (result is Result.Success) {
             withContext(Dispatchers.IO) { reviewDao.upsert(review.toEntity()) }
+        }
+        return result
+    }
+
+    override suspend fun deleteReview(reviewId: String): Result<Unit> {
+        val result = source.deleteReview(reviewId)
+        if (result is Result.Success) {
+            withContext(Dispatchers.IO) { reviewDao.deleteById(reviewId) }
         }
         return result
     }
@@ -57,6 +108,7 @@ class ReviewRepositoryImpl @Inject constructor(
         clientPhotoUrl = clientPhotoUrl,
         rating = rating,
         comment = comment,
+        bookingId = bookingId,
         createdAt = createdAt
     )
 
@@ -68,6 +120,7 @@ class ReviewRepositoryImpl @Inject constructor(
         clientPhotoUrl = clientPhotoUrl,
         rating = rating,
         comment = comment,
+        bookingId = bookingId,
         createdAt = createdAt
     )
 }

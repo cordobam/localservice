@@ -43,8 +43,10 @@ sealed class Screen(val route: String) {
     object Chat           : Screen("chat/{bookingId}/{providerName}") {
         fun createRoute(bookingId: String, providerName: String) = "chat/$bookingId/${Uri.encode(providerName)}"
     }
-    object Review         : Screen("review/{providerUid}/{providerName}") {
-         fun createRoute(providerUid: String, providerName: String) = "review/$providerUid/${Uri.encode(providerName)}"
+    object Review         : Screen("review/{providerUid}/{providerName}/{bookingId}?reviewId={reviewId}") {
+         fun createRoute(providerUid: String, providerName: String, bookingId: String, reviewId: String? = null) =
+             "review/$providerUid/${Uri.encode(providerName)}/$bookingId" +
+             (reviewId?.let { "?reviewId=$it" } ?: "")
      }
      object ProviderProfile : Screen("provider_profile")
 

@@ -18,6 +18,18 @@ interface ReviewDao {
     @Query("SELECT * FROM reviews WHERE providerUid = :providerUid ORDER BY createdAt DESC")
     fun getReviewsForProvider(providerUid: String): Flow<List<ReviewEntity>>
 
+    @Query("SELECT * FROM reviews WHERE clientUid = :clientUid ORDER BY createdAt DESC")
+    fun getReviewsByClient(clientUid: String): Flow<List<ReviewEntity>>
+
+    @Query("SELECT * FROM reviews WHERE id = :reviewId LIMIT 1")
+    suspend fun getReviewById(reviewId: String): ReviewEntity?
+
     @Query("DELETE FROM reviews WHERE id = :reviewId")
     suspend fun deleteById(reviewId: String)
+
+    @Query("DELETE FROM reviews WHERE providerUid = :providerUid")
+    suspend fun deleteByProviderUid(providerUid: String)
+
+    @Query("DELETE FROM reviews WHERE clientUid = :clientUid")
+    suspend fun deleteByClientUid(clientUid: String)
 }
