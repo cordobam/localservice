@@ -1,6 +1,8 @@
 package com.example.localservice.data.remote.firebase
 
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.localservice.domain.model.User
 import com.example.localservice.domain.model.UserRole
@@ -81,6 +83,52 @@ class AuthFirebaseSource @Inject constructor(
             Result.Success(user)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Error al obtener usuario", e)
+        }
+    }
+
+    // Login con Google: intercambia el idToken por credencial de Firebase.
+    // Si el usuario nunca entró, crea su documento en Firestore con role UNKNOWN
+    // (el rol se elige después en RolePickerScreen).
+    suspend fun signInWithGoogle(account: GoogleSignInAccount): Result<User> {
+        return try {
+            val idToken = account.idToken ?: return Result.Error("No se pudo obtener el token de Google")
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val uid = authResult.user?.uid ?: return Result.Error("UID nulo")
+
+            val existing = getUserFromFirestore(uid)
+            if (existing is Result.Success) return existing
+
+            val user = User(
+                uid = uid,
+                name = account.displayName ?: "",
+                email = account.email ?: "",
+                phone = "",
+                role = UserRole.UNKNOWN,
+                photoUrl = account.photoUrl?.toString() ?: "",
+                createdAt = System.currentTimeMillis()
+            )
+
+            firestore.collection("users").document(uid)
+                .set(user.toMap())
+                .await()
+
+            Result.Success(user)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error al iniciar sesión con Google", e)
+        }
+    }
+
+    // Asigna el rol elegido por un usuario nuevo (Google o email/password)
+    suspend fun setRole(uid: String, role: UserRole): Result<User> {
+        return try {
+            firestore.collection("users").document(uid)
+                .update(mapOf("role" to role.name))
+                .await()
+            val updated = getUserFromFirestore(uid)
+            if (updated is Result.Success) updated else Result.Error("Usuario no encontrado")
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Error al actualizar rol", e)
         }
     }
 

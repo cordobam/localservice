@@ -13,6 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+secrets.properties
 app/google-services.json
+/Archivos_proyecto/
 /graphify-out/
 /graphify-out/

@@ -17,12 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.localservice.BuildConfig
 import com.example.localservice.domain.model.Provider
 import com.example.localservice.domain.model.ServiceCategory
 import com.example.localservice.ui.viewmodel.MapViewModel
 
-// Reemplazá con tu API key real
-private const val MAPS_API_KEY = "TU_API_KEY_ACA"
+// La API key viene de secrets.properties vía BuildConfig (no va en el código).
+private val MAPS_API_KEY: String = BuildConfig.MAPS_API_KEY
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

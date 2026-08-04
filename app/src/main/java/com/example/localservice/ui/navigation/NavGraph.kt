@@ -41,6 +41,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
     val startDestination = when {
         uiState.isLoggedIn && uiState.currentUser?.role == UserRole.CLIENT -> Screen.ClientMain.route
         uiState.isLoggedIn && uiState.currentUser?.role == UserRole.PROVIDER -> Screen.Dashboard.route
+        uiState.isLoggedIn && uiState.currentUser?.role == UserRole.UNKNOWN -> Screen.RolePicker.route
         else -> Screen.Login.route
     }
 
@@ -51,8 +52,11 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) },
                 onLoginSuccess = { role ->
-                    val dest =
-                        if (role == UserRole.CLIENT) Screen.ClientMain.route else Screen.Dashboard.route
+                    val dest = when (role) {
+                        UserRole.CLIENT -> Screen.ClientMain.route
+                        UserRole.PROVIDER -> Screen.Dashboard.route
+                        UserRole.UNKNOWN -> Screen.RolePicker.route
+                    }
                     navController.navigate(dest) {
                         popUpTo(Screen.Login.route) {
                             inclusive = true

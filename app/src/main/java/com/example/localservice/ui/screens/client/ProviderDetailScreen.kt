@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.localservice.BuildConfig
 import com.example.localservice.domain.model.Review
 import com.example.localservice.ui.viewmodel.AuthViewModel
 import com.example.localservice.ui.viewmodel.ProviderDetailViewModel
@@ -367,7 +368,7 @@ fun ProviderDetailScreen(
                                         "?center=${provider.lat},${provider.lng}" +
                                         "&zoom=14&size=600x200&scale=2" +
                                         "&markers=color:red|${provider.lat},${provider.lng}" +
-                                        "&key=TU_API_KEY_ACA"
+                                        "&key=${BuildConfig.MAPS_API_KEY}"
                                 AsyncImage(
                                     model = mapUrl,
                                     contentDescription = "Mapa de zona",

@@ -12,6 +12,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.localservice.domain.model.UserRole
+import com.example.localservice.ui.components.GoogleSignInButton
 import com.example.localservice.ui.viewmodel.AuthViewModel
 
 // La pantalla solo recibe lambdas y observa el UiState.
@@ -130,6 +131,26 @@ fun LoginScreen(
                 Text("Ingresar")
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Separador "o"
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            HorizontalDivider(modifier = Modifier.weight(1f))
+            Text(
+                text = "  o  ",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider(modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        GoogleSignInButton(viewModel = viewModel, enabled = !uiState.isLoading)
 
         Spacer(modifier = Modifier.height(16.dp))
 

@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.hilt)          // Hilt
     alias(libs.plugins.ksp)           // KSP para Room y Hilt
     alias(libs.plugins.google.services)  // Firebase
+    alias(libs.plugins.secrets)           // secrets.properties -> BuildConfig
 }
 
 android {
@@ -40,7 +41,16 @@ android {
 
     kotlinOptions { jvmTarget = "17" }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    // El plugin de secrets inyecta las propiedades de secrets.properties
+    // como campos de BuildConfig (ej: BuildConfig.MAPS_API_KEY).
+    secrets {
+        propertiesFileName = "secrets.properties"
+    }
 }
 
 dependencies {
@@ -86,6 +96,9 @@ dependencies {
     // --- Coil (imágenes) ---
     implementation(libs.coil.compose)
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // --- Google Sign-In ---
+    implementation(libs.play.services.auth)
 
     // FASE 2+ — descomentá cuando lo necesites:
     // implementation(libs.retrofit)
