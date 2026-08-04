@@ -13,6 +13,7 @@ import com.example.localservice.util.copyImageToInternalStorage
 import com.example.localservice.util.isValidEmail
 import com.example.localservice.util.isValidPassword
 import com.example.localservice.util.toFriendlyError
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -110,6 +111,64 @@ class AuthViewModel @Inject constructor(
                     }
                 }
                 is Result.Loading -> Unit
+            }
+        }
+    }
+
+    fun signInWithGoogle(account: GoogleSignInAccount) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            when (val result = authRepository.signInWithGoogle(account)) {
+                is Result.Success -> {
+                    Log.d("ServiLocal", "GOOGLE LOGIN OK: ${result.data.email}")
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            currentUser = result.data,
+                            isLoggedIn = true
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    Log.e("ServiLocal", "GOOGLE LOGIN ERROR: ${result.message}")
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = result.message.toFriendlyError()
+                        )
+                    }
+                }
+                is Result.Loading -> Unit
+            }
+        }
+    }
+
+    // Asigna el rol elegido en RolePickerScreen para un usuario nuevo
+    // (vino por Google o por registro con email).
+    fun setRole(role: UserRole) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            when (val result = authRepository.setRole(role)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            currentUser = result.data,
+                            isLoggedIn = true
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = result.message.toFriendlyError()
+                        )
+                    }
+                }
+                else -> Unit
             }
         }
     }

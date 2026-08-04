@@ -20,6 +20,7 @@ fun RolePickerScreen(
     viewModel: AuthViewModel
 ) {
     var selectedRole by remember { mutableStateOf<UserRole?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -70,14 +71,21 @@ fun RolePickerScreen(
             onClick = {
                 selectedRole?.let { role ->
                     android.util.Log.d("ServiLocal", "BOTON PRESIONADO - role: $role")
-                    android.util.Log.d("ServiLocal", "Datos: ${viewModel.pendingName} / ${viewModel.pendingEmail}")
-                    viewModel.register(
-                        name     = viewModel.pendingName,
-                        email    = viewModel.pendingEmail,
-                        password = viewModel.pendingPassword,
-                        phone    = viewModel.pendingPhone,
-                        role     = role
-                    )
+                    // Si el usuario ya está logueado (vino por Google), solo asignamos el rol.
+                    // Si no, completa el registro de email/password pendiente.
+                    val currentRole = uiState.currentUser?.role
+                    if (currentRole == UserRole.UNKNOWN) {
+                        viewModel.setRole(role)
+                    } else {
+                        android.util.Log.d("ServiLocal", "Datos: ${viewModel.pendingName} / ${viewModel.pendingEmail}")
+                        viewModel.register(
+                            name     = viewModel.pendingName,
+                            email    = viewModel.pendingEmail,
+                            password = viewModel.pendingPassword,
+                            phone    = viewModel.pendingPhone,
+                            role     = role
+                        )
+                    }
                 }
                       },
             enabled = selectedRole != null,
@@ -89,9 +97,12 @@ fun RolePickerScreen(
         }
 
         val uiState by viewModel.uiState.collectAsState()
-        LaunchedEffect(uiState.isLoggedIn) {
-            if (uiState.isLoggedIn) {
-                selectedRole?.let { onRoleSelected(it) }
+        // Navegamos cuando el rol queda asignado (CLIENT o PROVIDER),
+        // tanto para registros de email como para usuarios de Google.
+        LaunchedEffect(uiState.currentUser?.role) {
+            val role = uiState.currentUser?.role
+            if (role != null && role != UserRole.UNKNOWN) {
+                onRoleSelected(role)
             }
         }
     }

@@ -7,6 +7,7 @@ import com.example.localservice.domain.model.User
 import com.example.localservice.domain.model.UserRole
 import com.example.localservice.domain.repository.AuthRepository
 import com.example.localservice.util.Result
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +53,23 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun login(email: String, password: String): Result<User> {
         val result = source.login(email, password)
+        if (result is Result.Success) {
+            withContext(Dispatchers.IO) { userDao.upsert(result.data.toEntity()) }
+        }
+        return result
+    }
+
+    override suspend fun signInWithGoogle(account: GoogleSignInAccount): Result<User> {
+        val result = source.signInWithGoogle(account)
+        if (result is Result.Success) {
+            withContext(Dispatchers.IO) { userDao.upsert(result.data.toEntity()) }
+        }
+        return result
+    }
+
+    override suspend fun setRole(role: UserRole): Result<User> {
+        val uid = source.currentFirebaseUser()?.uid ?: return Result.Error("No hay sesión activa")
+        val result = source.setRole(uid, role)
         if (result is Result.Success) {
             withContext(Dispatchers.IO) { userDao.upsert(result.data.toEntity()) }
         }
