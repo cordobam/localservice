@@ -32,23 +32,19 @@ class AuthRepositoryImpl @Inject constructor(
             if (firebaseUser == null) {
                 trySend(null)
             } else {
-                CoroutineScope(Dispatchers.IO).launch {
+                launch(Dispatchers.IO) {   // usa la scope del callbackFlow, no una nueva
                     val result = source.getUserFromFirestore(firebaseUser.uid)
                     if (result is Result.Success) {
                         userDao.upsert(result.data.toEntity())
                     }
                     val cached = userDao.getUserById(firebaseUser.uid)
-                    val user = cached?.toDomain()
-                    trySend(user)
+                    trySend(cached?.toDomain())
                 }
             }
         }
 
         FirebaseAuth.getInstance().addAuthStateListener(listener)
-
-        awaitClose {
-            FirebaseAuth.getInstance().removeAuthStateListener(listener)
-        }
+        awaitClose { FirebaseAuth.getInstance().removeAuthStateListener(listener) }
     }
 
     override suspend fun login(email: String, password: String): Result<User> {

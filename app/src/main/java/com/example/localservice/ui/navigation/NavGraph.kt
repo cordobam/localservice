@@ -62,7 +62,8 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
                             inclusive = true
                         }
                     }
-                }
+                },
+                viewModel = authViewModel
             )
         }
 

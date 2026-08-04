@@ -50,6 +50,9 @@ class AuthViewModel @Inject constructor(
     var pendingPassword = ""
     var pendingPhone = ""
 
+    var isGoogleFlow = false
+        private set
+
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
@@ -116,6 +119,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun signInWithGoogle(account: GoogleSignInAccount) {
+        isGoogleFlow = true
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
@@ -307,6 +311,7 @@ class AuthViewModel @Inject constructor(
         password: String,
         phone: String
     ) {
+        isGoogleFlow = false
         pendingName = name
         pendingEmail = email
         pendingPassword = password
